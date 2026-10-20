@@ -1,0 +1,3 @@
+[submodule "leetcode-company-wise-problems"]
+	path = leetcode-company-wise-problems
+	url = https://github.com/liquidslr/leetcode-company-wise-problems.git

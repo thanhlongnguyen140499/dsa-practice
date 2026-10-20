@@ -1,0 +1,426 @@
+#!/usr/bin/env python3
+"""DSA practice helper: pick problems from company lists, generate Swift templates, track progress.
+
+Usage:
+  ./dsa companies [query]                       list companies (optionally filtered)
+  ./dsa list <company> [filters]                show a company's problems with ✅ for solved ones
+  ./dsa pick <company> [filters] [-n N] [-r]    pick unsolved problems and create Swift files
+  ./dsa open [slug]                             open the package (and a solution) in Xcode
+  ./dsa done <slug> / ./dsa undo <slug>         mark a problem solved / unsolved
+  ./dsa regen [slug...] [--force]               rebuild untouched files with LeetCode's signature + tests
+  ./dsa status [company]                        show progress
+
+Filters:
+  -p/--period  30d | 3m | 6m | older | all   (default: all)
+  -d/--difficulty easy | medium | hard
+  -t/--topic   substring of a topic, e.g. "graph", "dynamic"
+"""
+import argparse
+import csv
+import html
+import json
+import random
+import re
+import subprocess
+import sys
+import urllib.request
+from datetime import date
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+DATA = ROOT / "leetcode-company-wise-problems"
+SOLUTIONS = ROOT / "solutions"
+PROGRESS = ROOT / "progress.json"
+
+PERIODS = {
+    "30d": "1. Thirty Days.csv",
+    "3m": "2. Three Months.csv",
+    "6m": "3. Six Months.csv",
+    "older": "4. More Than Six Months.csv",
+    "all": "5. All.csv",
+}
+
+
+# ---------- data ----------
+
+def companies():
+    return sorted(p.name for p in DATA.iterdir() if p.is_dir() and not p.name.startswith("."))
+
+
+def resolve_company(query):
+    names = companies()
+    q = query.lower()
+    exact = [n for n in names if n.lower() == q]
+    if exact:
+        return exact[0]
+    matches = [n for n in names if q in n.lower()]
+    if len(matches) == 1:
+        return matches[0]
+    if not matches:
+        sys.exit(f"No company matches '{query}'. Try: ./dsa companies {query[:3]}")
+    sys.exit(f"'{query}' is ambiguous: {', '.join(matches[:15])}")
+
+
+def slug_of(link):
+    return link.rstrip("/").split("/problems/")[-1].split("/")[0]
+
+
+NON_SWIFT_TOPICS = ("Database", "Shell")  # SQL / bash problems can't be solved in Swift
+
+
+def read_rows(company, period):
+    path = DATA / company / PERIODS[period]
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def load_problems(company, period="all"):
+    rows = read_rows(company, period)
+    # Some period files have no Topics column; borrow topics from the all-time list.
+    all_topics = {slug_of(r["Link"]): r.get("Topics") or "" for r in read_rows(company, "all") if r.get("Link")}
+    for r in rows:
+        if not r.get("Topics") and r.get("Link"):
+            r["Topics"] = all_topics.get(slug_of(r["Link"]), "")
+    rows = [r for r in rows if not any(t in (r.get("Topics") or "") for t in NON_SWIFT_TOPICS)]
+    problems = []
+    for r in rows:
+        link = (r.get("Link") or "").strip()
+        if not link:
+            continue
+        problems.append({
+            "slug": slug_of(link),
+            "title": r.get("Title", "").strip(),
+            "difficulty": r.get("Difficulty", "").strip().capitalize(),
+            "frequency": float(r.get("Frequency") or 0),
+            "link": link,
+            "topics": (r.get("Topics") or "").strip(),
+        })
+    return problems
+
+
+def apply_filters(problems, args):
+    if args.difficulty:
+        problems = [p for p in problems if p["difficulty"].lower() == args.difficulty]
+    if args.topic:
+        t = args.topic.lower()
+        problems = [p for p in problems if t in p["topics"].lower()]
+    return problems
+
+
+# ---------- progress ----------
+
+def load_progress():
+    if PROGRESS.exists():
+        return json.loads(PROGRESS.read_text())
+    return {"solved": {}, "started": {}}
+
+
+def save_progress(progress):
+    PROGRESS.write_text(json.dumps(progress, indent=2, sort_keys=True) + "\n")
+
+
+# ---------- templates ----------
+
+TEMPLATE = """\
+// {title}
+// {difficulty} · {topics}
+// {link}
+// Picked from: {company}
+//
+// Approach:
+//
+// Time:  O(?)
+// Space: O(?)
+//
+// Results show in Xcode's canvas (Editor → Canvas, ⌥⌘↩).
+// Submit only `class Solution {{ ... }}` to LeetCode.
+// Helpers: check(got, want), list([1,2]), array(of:), tree([1,nil,2]), levelOrder(of:)
+
+import Playgrounds
+
+#Playground("{playground_name}") {{
+{body}
+}}
+"""
+
+PLACEHOLDER = "// Paste the function signature from LeetCode here."
+
+FALLBACK_BODY = f"""\
+    class Solution {{
+        {PLACEHOLDER}
+    }}
+
+    let s = Solution()
+    // check(s.methodName(input), expectedOutput)"""
+
+GRAPHQL_QUERY = """query q($s: String!) { question(titleSlug: $s) {
+  content exampleTestcases metaData codeSnippets { langSlug code } } }"""
+
+
+def fetch_question(slug):
+    """Swift signature + examples from LeetCode's public API, or None (offline / Premium)."""
+    req = urllib.request.Request(
+        "https://leetcode.com/graphql",
+        data=json.dumps({"query": GRAPHQL_QUERY, "variables": {"s": slug}}).encode(),
+        headers={"Content-Type": "application/json", "Referer": "https://leetcode.com",
+                 "User-Agent": "Mozilla/5.0"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.load(r)["data"]["question"]
+    except Exception:
+        return None
+
+
+def default_return(swift_type):
+    t = swift_type.strip()
+    if t.endswith("?"):
+        return "nil"
+    if t.startswith("["):
+        return "[]"
+    return {"Int": "0", "Bool": "false", "String": '""', "Double": "0", "Character": '" "'}.get(t)
+
+
+def swift_literal(value, lc_type):
+    v = value.strip()
+    if "string" not in lc_type and "character" not in lc_type:
+        v = re.sub(r"\bnull\b", "nil", v)
+    if lc_type == "ListNode":
+        return f"list({v})"
+    if lc_type == "TreeNode":
+        return f"tree({v})"
+    return v
+
+
+def build_body(q):
+    snippet = next((c["code"] for c in q.get("codeSnippets") or [] if c["langSlug"] == "swift"), None)
+    if not snippet:
+        return None
+    meta = json.loads(q.get("metaData") or "{}")
+    # Drop LeetCode's commented ListNode/TreeNode definitions; _Helpers.swift has them.
+    code = re.sub(r"^\s*/\*\*.*?\*/\s*", "", snippet, flags=re.S).rstrip()
+    # Give empty functions a placeholder return so the file compiles from the start.
+    def fill(m):
+        ret = default_return(m.group(2))
+        return m.group(1) + (f"return {ret}" if ret else "")
+    code = re.sub(r"(-> ([^{]+?) \{\n(\s*))(?=\n)", lambda m: fill(m), code)
+    lines = ["    " + l if l.strip() else "" for l in code.splitlines()]
+
+    inputs = [l for l in (q.get("exampleTestcases") or "").split("\n")]
+    text = html.unescape(re.sub(r"<[^>]+>", "", q.get("content") or ""))
+    outputs = [o.strip() for o in re.findall(r"Output:\s*(.+)", text)]
+    params = meta.get("params") or []
+    groups = [inputs[i:i + len(params)] for i in range(0, len(inputs), len(params))] if params else []
+
+    testable = ("classname" not in meta and params and "inout" not in snippet
+                and meta.get("return", {}).get("type") not in (None, "void")
+                and len(groups) == len(outputs) and all(len(g) == len(params) for g in groups))
+    lines += [""]
+    if testable:
+        name, ret_type = meta["name"], meta["return"]["type"]
+        lines.append("    let s = Solution()")
+        for group, out in zip(groups, outputs):
+            call = f"s.{name}({', '.join(swift_literal(v, p['type']) for v, p in zip(group, params))})"
+            if ret_type == "ListNode":
+                call = f"array(of: {call})"
+            elif ret_type == "TreeNode":
+                call = f"levelOrder(of: {call})"
+            want = swift_literal(out, ret_type).removeprefix("list(").removeprefix("tree(")
+            if ret_type in ("ListNode", "TreeNode"):
+                want = want[:-1]
+            lines.append(f"    check({call}, {want})")
+    else:
+        # In-place (inout), void, or design problems: write the tests yourself from these examples.
+        if "classname" not in meta:
+            lines.append("    let s = Solution()")
+        lines.append("    // Examples from LeetCode:")
+        for i, group in enumerate(groups):
+            lines.append(f"    // Input:  {', '.join(group)}")
+            if i < len(outputs):
+                lines.append(f"    // Output: {outputs[i]}")
+    return "\n".join(lines)
+
+
+def render(p, company, body):
+    return TEMPLATE.format(**{
+        **p,
+        "company": company,
+        "topics": p["topics"] or "—",
+        "playground_name": p["title"].replace("\\", "\\\\").replace('"', '\\"'),
+        "body": body,
+    })
+
+
+def create_template(p, company):
+    SOLUTIONS.mkdir(exist_ok=True)
+    path = SOLUTIONS / f"{p['slug']}.swift"
+    if path.exists():
+        return path, False
+    q = fetch_question(p["slug"])
+    body = (build_body(q) if q else None) or FALLBACK_BODY
+    path.write_text(render(p, company, body))
+    return path, True
+
+
+# ---------- commands ----------
+
+def cmd_companies(args):
+    names = companies()
+    if args.query:
+        names = [n for n in names if args.query.lower() in n.lower()]
+    print("\n".join(names))
+    print(f"\n{len(names)} companies")
+
+
+def cmd_list(args):
+    company = resolve_company(args.company)
+    problems = apply_filters(load_problems(company, args.period), args)
+    solved = load_progress()["solved"]
+    if not problems:
+        print(f"No problems for {company} with those filters.")
+        return
+    for i, p in enumerate(problems, 1):
+        mark = "✅" if p["slug"] in solved else "  "
+        print(f"{mark} {i:3}. [{p['difficulty'][:1]}] {p['title']:<50} freq {p['frequency']:5.1f}  {p['slug']}")
+    done = sum(p["slug"] in solved for p in problems)
+    print(f"\n{company} ({args.period}): {done}/{len(problems)} solved")
+
+
+def cmd_pick(args):
+    company = resolve_company(args.company)
+    progress = load_progress()
+    problems = [p for p in apply_filters(load_problems(company, args.period), args)
+                if p["slug"] not in progress["solved"]]
+    problems.sort(key=lambda p: -p["frequency"])
+    if not problems:
+        print(f"Nothing unsolved for {company} with those filters. 🎉")
+        return
+    picked = random.sample(problems, min(args.n, len(problems))) if args.random else problems[:args.n]
+    for p in picked:
+        path, created = create_template(p, company)
+        progress["started"].setdefault(p["slug"], {
+            "title": p["title"], "difficulty": p["difficulty"], "link": p["link"],
+            "company": company, "date": date.today().isoformat(),
+        })
+        print(f"[{p['difficulty']}] {p['title']}")
+        print(f"   {p['link']}")
+        print(f"   {path.relative_to(ROOT)}{'' if created else '  (already existed)'}\n")
+    save_progress(progress)
+
+
+def find_slug(slug):
+    slug = slug_of(slug) if "/problems/" in slug else slug.removesuffix(".swift").split("/")[-1]
+    return slug
+
+
+def cmd_open(args):
+    # Open the package first so the file lands in its workspace and the canvas works.
+    subprocess.call(["open", "-a", "Xcode", str(ROOT)])
+    if args.slug:
+        path = SOLUTIONS / f"{find_slug(args.slug)}.swift"
+        if not path.exists():
+            sys.exit(f"{path.relative_to(ROOT)} doesn't exist.")
+        subprocess.call(["xed", str(path)])
+        print(f"Opened {path.relative_to(ROOT)} in Xcode")
+    print("Show results with Editor → Canvas (⌥⌘↩)")
+
+
+def cmd_regen(args):
+    paths = [SOLUTIONS / f"{find_slug(x)}.swift" for x in args.slugs] or sorted(SOLUTIONS.glob("*.swift"))
+    for path in paths:
+        if path.name.startswith("_") or not path.exists():
+            continue
+        text = path.read_text()
+        untouched = re.search(r"class Solution \{\s*" + re.escape(PLACEHOLDER) + r"\s*\}", text)
+        if not untouched and not args.force:
+            print(f"skip  {path.name} (already has your code; use --force to overwrite)")
+            continue
+        header = text.splitlines()
+        difficulty, _, topics = header[1][3:].partition(" · ")
+        p = {"slug": path.stem, "title": header[0][3:], "difficulty": difficulty,
+             "topics": "" if topics == "—" else topics, "link": header[2][3:]}
+        company = header[3].removeprefix("// Picked from: ")
+        q = fetch_question(p["slug"])
+        body = build_body(q) if q else None
+        if not body:
+            print(f"skip  {path.name} (couldn't fetch it from LeetCode; Premium or offline)")
+            continue
+        path.write_text(render(p, company, body))
+        print(f"regen {path.name}")
+
+
+def cmd_done(args):
+    slug = find_slug(args.slug)
+    progress = load_progress()
+    info = progress["started"].pop(slug, None) or {"title": slug}
+    info["date"] = date.today().isoformat()
+    progress["solved"][slug] = info
+    save_progress(progress)
+    print(f"✅ {info['title']} marked solved ({len(progress['solved'])} total)")
+
+
+def cmd_undo(args):
+    slug = find_slug(args.slug)
+    progress = load_progress()
+    info = progress["solved"].pop(slug, None)
+    if info is None:
+        sys.exit(f"{slug} isn't marked solved.")
+    progress["started"][slug] = info
+    save_progress(progress)
+    print(f"↩️  {info.get('title', slug)} moved back to in progress")
+
+
+def cmd_status(args):
+    progress = load_progress()
+    solved, started = progress["solved"], progress["started"]
+    by_diff = {}
+    for info in solved.values():
+        d = info.get("difficulty", "?")
+        by_diff[d] = by_diff.get(d, 0) + 1
+    print(f"Solved: {len(solved)}  ({', '.join(f'{k} {v}' for k, v in sorted(by_diff.items())) or '—'})")
+    if started:
+        print("\nIn progress:")
+        for slug, info in sorted(started.items(), key=lambda kv: kv[1].get("date", "")):
+            print(f"  [{info.get('difficulty', '?')[:1]}] {info.get('title', slug):<50} {slug}")
+    if args.company:
+        company = resolve_company(args.company)
+        print()
+        for period in PERIODS:
+            problems = load_problems(company, period)
+            if problems:
+                done = sum(p["slug"] in solved for p in problems)
+                print(f"{company} {period:>5}: {done}/{len(problems)} solved")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    def add_filters(p):
+        p.add_argument("company")
+        p.add_argument("-p", "--period", choices=PERIODS, default="all")
+        p.add_argument("-d", "--difficulty", choices=["easy", "medium", "hard"])
+        p.add_argument("-t", "--topic")
+
+    p = sub.add_parser("companies"); p.add_argument("query", nargs="?"); p.set_defaults(func=cmd_companies)
+    p = sub.add_parser("list"); add_filters(p); p.set_defaults(func=cmd_list)
+    p = sub.add_parser("pick"); add_filters(p)
+    p.add_argument("-n", type=int, default=1, help="how many problems (default 1)")
+    p.add_argument("-r", "--random", action="store_true", help="random instead of most frequent")
+    p.set_defaults(func=cmd_pick)
+    p = sub.add_parser("open"); p.add_argument("slug", nargs="?"); p.set_defaults(func=cmd_open)
+    p = sub.add_parser("regen"); p.add_argument("slugs", nargs="*")
+    p.add_argument("--force", action="store_true", help="overwrite even if you've written code")
+    p.set_defaults(func=cmd_regen)
+    p = sub.add_parser("done"); p.add_argument("slug"); p.set_defaults(func=cmd_done)
+    p = sub.add_parser("undo"); p.add_argument("slug"); p.set_defaults(func=cmd_undo)
+    p = sub.add_parser("status"); p.add_argument("company", nargs="?"); p.set_defaults(func=cmd_status)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
