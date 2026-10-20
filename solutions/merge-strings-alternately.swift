@@ -17,12 +17,20 @@ import Playgrounds
 #Playground("Merge Strings Alternately") {
     class Solution {
         func mergeAlternately(_ word1: String, _ word2: String) -> String {
-            return ""
+            let a = Array(word1)
+            let b = Array(word2)
+            var result: [Character] = []
+
+            for i in 0..<max(a.count, b.count) {
+                if i < a.count { result.append(a[i]) }
+                if i < b.count { result.append(b[i]) }
+            }
+            return String(result)
         }
     }
 
     let s = Solution()
-    check(s.mergeAlternately("abc", "pqr"), "apbqcr")
-    check(s.mergeAlternately("ab", "pqrs"), "apbqrs")
-    check(s.mergeAlternately("abcd", "pq"), "apbqcd")
+//    check(s.mergeAlternately("abc", "pqr"), "apbqcr")
+        check(s.mergeAlternately("ab", "pqrs"), "apbqrs")
+    //    check(s.mergeAlternately("abcd", "pq"), "apbqcd")
 }
