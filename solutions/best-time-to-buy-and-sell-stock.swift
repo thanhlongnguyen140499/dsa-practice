@@ -16,8 +16,45 @@ import Playgrounds
 
 #Playground("Best Time to Buy and Sell Stock") {
     class Solution {
+        // MARK: Solution 2
+        // E.g: [7, 1, 5, 3, 6, 4]
         func maxProfit(_ prices: [Int]) -> Int {
-            return 0
+            var minPrice = Int.max
+            var maxPrice = 0
+            
+            for price in prices {
+                if price < minPrice {
+                    minPrice = price
+                } else {
+                    maxPrice = max(maxPrice, price - minPrice)
+                }
+            }
+            
+            return maxPrice
+        }
+        
+        // MARK: Solution 1 with BigO(n^2)
+        func maxProfit2(_ prices: [Int]) -> Int {
+            // Each item:
+                // -> check profit with others
+                // -> Find: the higest profit
+                // -> save to hash map
+                // -> Compare with others
+            
+            var highestProfit: Int = 0
+            
+            for i in 0..<prices.count - 1 {
+                for j in i+1..<prices.count {
+                    if prices[i] < prices[i + 1] {
+                        let profit = prices[j] - prices[i]
+                        if profit > highestProfit {
+                            highestProfit = profit
+                        }
+                    }
+                }
+            }
+            
+            return highestProfit
         }
     }
 
