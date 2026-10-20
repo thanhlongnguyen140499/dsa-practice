@@ -17,11 +17,28 @@ import Playgrounds
 #Playground("Longest Common Prefix") {
     class Solution {
         func longestCommonPrefix(_ strs: [String]) -> String {
-            return ""
+            // ["flower", "flow", "flight"]
+            
+            let words = strs.map { Array($0) }
+            print("check: \(words)")
+            
+            let firstStr = words[0]
+            // ["f", "l", "o", "w", "e", "r"]
+            
+            for i in 0..<firstStr.count {
+                for word in words.dropFirst() {
+                    if i >= word.count || firstStr[i] != word[i] {
+                        
+                        return String(firstStr[0..<i])
+                    }
+                }
+            }
+            
+            return strs[0]
         }
     }
 
     let s = Solution()
     check(s.longestCommonPrefix(["flower","flow","flight"]), "fl")
-    check(s.longestCommonPrefix(["dog","racecar","car"]), "")
+//    check(s.longestCommonPrefix(["dog","racecar","car"]), "")
 }
