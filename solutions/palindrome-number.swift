@@ -16,13 +16,30 @@ import Playgrounds
 
 #Playground("Palindrome Number") {
     class Solution {
-        func isPalindrome(_ x: Int) -> Bool {
-            return false
+        func isPalindrome(_ x: Int) -> Bool {            
+            // 0 -> 0 -> ends: 0
+            // 12 -> 2 -> ends: 1
+            // 123 -> 3 -> ends: 1
+            // 1234 -> 4 -> ends: 2
+            // 12345 -> 5 -> ends: 2
+            
+            if x < 0 { return false }
+            
+            let digits = Array(String(x))
+            let count = digits.count
+            
+            for i in 0..<count / 2 {
+                if digits[i] != digits[count - 1 - i] {
+                    return false
+                }
+            }
+            
+            return true
         }
     }
 
     let s = Solution()
-    check(s.isPalindrome(121), true)
+//    check(s.isPalindrome(121), true)
     check(s.isPalindrome(-121), false)
-    check(s.isPalindrome(10), false)
+//    check(s.isPalindrome(10), false)
 }
