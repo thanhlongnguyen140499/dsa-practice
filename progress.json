@@ -50,6 +50,13 @@
       "difficulty": "Easy",
       "link": "https://leetcode.com/problems/palindrome-number",
       "title": "Palindrome Number"
+    },
+    "roman-to-integer": {
+      "company": "\u2014",
+      "date": "2026-10-21",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/roman-to-integer",
+      "title": "Roman to Integer"
     }
   }
 }

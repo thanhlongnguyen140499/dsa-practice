@@ -5,6 +5,7 @@ Usage:
   ./dsa companies [query]                       list companies (optionally filtered)
   ./dsa list <company> [filters]                show a company's problems with ✅ for solved ones
   ./dsa pick <company> [filters] [-n N] [-r]    pick unsolved problems and create Swift files
+  ./dsa new <link|slug> [--dir Folder]          create a file for any LeetCode problem
   ./dsa open [slug]                             open the package (and a solution) in Xcode
   ./dsa done <slug> / ./dsa undo <slug>         mark a problem solved / unsolved
   ./dsa regen [slug...] [--force]               rebuild untouched files with LeetCode's signature + tests
@@ -156,6 +157,7 @@ FALLBACK_BODY = f"""\
     // check(s.methodName(input), expectedOutput)"""
 
 GRAPHQL_QUERY = """query q($s: String!) { question(titleSlug: $s) {
+  title difficulty topicTags { name }
   content exampleTestcases metaData codeSnippets { langSlug code } } }"""
 
 
@@ -253,11 +255,22 @@ def render(p, company, body):
     })
 
 
+def find_solution(slug):
+    """solutions/<slug>.swift, or solutions/<Folder>/<slug>.swift."""
+    return next(iter(sorted(SOLUTIONS.rglob(f"{slug}.swift"))), None)
+
+
+def is_blank(text):
+    """A file Xcode made with File → New → File: just a header comment and imports."""
+    return "#Playground" not in text and "class " not in text and "func " not in text
+
+
 def create_template(p, company):
     SOLUTIONS.mkdir(exist_ok=True)
+    existing = find_solution(p["slug"])
+    if existing:
+        return existing, False
     path = SOLUTIONS / f"{p['slug']}.swift"
-    if path.exists():
-        return path, False
     q = fetch_question(p["slug"])
     body = (build_body(q) if q else None) or FALLBACK_BODY
     path.write_text(render(p, company, body))
@@ -315,22 +328,56 @@ def find_slug(slug):
     return slug
 
 
+def cmd_new(args):
+    slug = find_slug(args.problem)
+    q = fetch_question(slug)
+    body = build_body(q) if q else None
+    if not body:
+        sys.exit(f"Couldn't fetch '{slug}' from LeetCode (Premium, a typo, or offline).")
+    p = {"slug": slug, "title": q["title"], "difficulty": q["difficulty"].capitalize(),
+         "topics": ", ".join(t["name"] for t in q.get("topicTags") or []),
+         "link": f"https://leetcode.com/problems/{slug}"}
+
+    existing = find_solution(slug)
+    if args.dir:
+        path = SOLUTIONS / args.dir / f"{slug}.swift"
+    else:
+        path = existing or SOLUTIONS / f"{slug}.swift"
+    if existing and existing != path:
+        sys.exit(f"{existing.relative_to(ROOT)} already exists; move it or drop --dir.")
+    if path.exists() and not is_blank(path.read_text()) and not args.force:
+        sys.exit(f"{path.relative_to(ROOT)} already has code; use --force to overwrite.")
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render(p, "—", body))
+    progress = load_progress()
+    if slug not in progress["solved"]:
+        progress["started"].setdefault(slug, {
+            "title": p["title"], "difficulty": p["difficulty"], "link": p["link"],
+            "company": "—", "date": date.today().isoformat(),
+        })
+        save_progress(progress)
+    print(f"[{p['difficulty']}] {p['title']}")
+    print(f"   {p['link']}")
+    print(f"   {path.relative_to(ROOT)}")
+
+
 def cmd_open(args):
     # Open the package first so the file lands in its workspace and the canvas works.
     subprocess.call(["open", "-a", "Xcode", str(ROOT)])
     if args.slug:
-        path = SOLUTIONS / f"{find_slug(args.slug)}.swift"
-        if not path.exists():
-            sys.exit(f"{path.relative_to(ROOT)} doesn't exist.")
+        path = find_solution(find_slug(args.slug))
+        if not path:
+            sys.exit(f"No solution file for {find_slug(args.slug)}.")
         subprocess.call(["xed", str(path)])
         print(f"Opened {path.relative_to(ROOT)} in Xcode")
     print("Show results with Editor → Canvas (⌥⌘↩)")
 
 
 def cmd_regen(args):
-    paths = [SOLUTIONS / f"{find_slug(x)}.swift" for x in args.slugs] or sorted(SOLUTIONS.glob("*.swift"))
+    paths = [find_solution(find_slug(x)) for x in args.slugs] or sorted(SOLUTIONS.rglob("*.swift"))
     for path in paths:
-        if path.name.startswith("_") or not path.exists():
+        if not path or path.name.startswith("_") or not path.read_text().startswith("// "):
             continue
         text = path.read_text()
         untouched = re.search(r"class Solution \{\s*" + re.escape(PLACEHOLDER) + r"\s*\}", text)
@@ -354,6 +401,10 @@ def cmd_regen(args):
 def cmd_done(args):
     slug = find_slug(args.slug)
     progress = load_progress()
+    if slug in progress["solved"]:
+        info = progress["solved"][slug]
+        print(f"✅ {info.get('title', slug)} was already solved on {info.get('date', '?')}")
+        return
     info = progress["started"].pop(slug, None) or {"title": slug}
     info["date"] = date.today().isoformat()
     progress["solved"][slug] = info
@@ -410,6 +461,10 @@ def main():
     p.add_argument("-n", type=int, default=1, help="how many problems (default 1)")
     p.add_argument("-r", "--random", action="store_true", help="random instead of most frequent")
     p.set_defaults(func=cmd_pick)
+    p = sub.add_parser("new"); p.add_argument("problem", help="LeetCode link or slug")
+    p.add_argument("--dir", help="subfolder of solutions/, e.g. Hashmap")
+    p.add_argument("--force", action="store_true", help="overwrite even if you've written code")
+    p.set_defaults(func=cmd_new)
     p = sub.add_parser("open"); p.add_argument("slug", nargs="?"); p.set_defaults(func=cmd_open)
     p = sub.add_parser("regen"); p.add_argument("slugs", nargs="*")
     p.add_argument("--force", action="store_true", help="overwrite even if you've written code")

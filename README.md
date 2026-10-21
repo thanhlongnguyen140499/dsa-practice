@@ -7,6 +7,7 @@ Problem lists come from [`leetcode-company-wise-problems`](leetcode-company-wise
 ./dsa list Google -p 30d -d medium   # browse problems (✅ = solved)
 ./dsa pick Google -p 3m -n 3         # 3 most-frequent unsolved → solutions/<slug>.swift
 ./dsa pick Meta -t graph -r          # 1 random unsolved graph problem
+./dsa new <leetcode link> --dir Hashmap   # any problem → solutions/Hashmap/<slug>.swift
 ./dsa open two-sum                   # open the package + that file in Xcode
 ./dsa done two-sum                   # mark solved (./dsa undo two-sum to revert)
 ./dsa status Google                  # overall + per-company progress
