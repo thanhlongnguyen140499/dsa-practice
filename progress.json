@@ -23,6 +23,13 @@
       "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock",
       "title": "Best Time to Buy and Sell Stock"
     },
+    "integer-to-roman": {
+      "company": "\u2014",
+      "date": "2026-10-21",
+      "difficulty": "Medium",
+      "link": "https://leetcode.com/problems/integer-to-roman",
+      "title": "Integer to Roman"
+    },
     "longest-common-prefix": {
       "company": "Google",
       "date": "2026-10-20",
