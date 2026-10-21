@@ -32,8 +32,8 @@
 //   DispatchQueue(label: "x")                your own serial queue
 //   DispatchQueue(label: "x", attributes: .concurrent)   your own concurrent queue
 //
-// QoS (priority), highest to lowest:
-//   .userInteractive > .userInitiated > .default > .utility > .background
+// QoS ("quality of service") tells the system how important a task is to the user.
+// Section 3 covers each class: what it's for, real examples, and how to pick one.
 //
 // The usual iOS pattern:
 //   DispatchQueue.global(qos: .userInitiated).async {
@@ -100,9 +100,116 @@ func demo(_ body: () -> Void) { body() }
     // Usual output: concurrent 3, 2, 1. The order isn't guaranteed.
 }}
 
-// MARK: - 3. DispatchGroup: wait for many tasks, then do something
+// MARK: - 3. QoS: how important is this work?
 
-#Playground("3. DispatchGroup") { demo {
+// QoS doesn't just set the order. It tells iOS how much CPU time, how fast a CPU core,
+// and how much energy a task deserves. Pick the class by asking:
+// "What is the user doing while this runs?"
+//
+// ┌──────────────────┬──────────────────────────────────────┬───────────────────────────────────────────┬──────────────┐
+// │ QoS class        │ Meaning                              │ Examples                                  │ Should take  │
+// ├──────────────────┼──────────────────────────────────────┼───────────────────────────────────────────┼──────────────┤
+// │ .userInteractive │ The user is interacting RIGHT NOW.   │ animations, event handling (touches),     │ instant      │
+// │  (highest)       │ If it's late, the UI stutters.       │ scrolling, updating the UI. The MAIN      │ (one frame,  │
+// │                  │                                      │ THREAD runs at this QoS.                  │  ~16 ms)     │
+// ├──────────────────┼──────────────────────────────────────┼───────────────────────────────────────────┼──────────────┤
+// │ .userInitiated   │ The user started it and is WAITING   │ opening a document they tapped, loading   │ nearly       │
+// │                  │ for the result before continuing.    │ the screen they just opened, applying a   │ instant, up  │
+// │                  │                                      │ photo filter after a tap                  │ to a few sec │
+// ├──────────────────┼──────────────────────────────────────┼───────────────────────────────────────────┼──────────────┤
+// │ .default         │ Sits between userInitiated and       │ what you get if you don't choose.         │ —            │
+// │                  │ utility. Don't pick it on purpose.   │ DispatchQueue.global() uses it.           │              │
+// ├──────────────────┼──────────────────────────────────────┼───────────────────────────────────────────┼──────────────┤
+// │ .utility         │ Long-running work the user KNOWS     │ downloads with a progress bar, importing  │ seconds to   │
+// │                  │ about but doesn't wait on.           │ data, heavy calculations with a spinner   │ minutes      │
+// ├──────────────────┼──────────────────────────────────────┼───────────────────────────────────────────┼──────────────┤
+// │ .background      │ Work the user DOESN'T SEE at all.    │ backups, syncing, indexing, prefetching,  │ minutes to   │
+// │  (lowest)        │ Most energy-efficient.               │ cleaning up old cache files               │ hours        │
+// └──────────────────┴──────────────────────────────────────┴───────────────────────────────────────────┴──────────────┘
+//   (.unspecified = "no QoS info". You don't choose it. The system infers one.)
+//
+// Memory trick, reading top to bottom: the user is "touching it", "waiting for it",
+// "watching a progress bar", "not even aware of it".
+//
+// QUIZ traps:
+//   "Animations / event handling / drives the UI?"   → .userInteractive   (NOT .userInitiated)
+//   "User tapped and waits for the result?"          → .userInitiated
+//   "Download with a progress bar?"                  → .utility
+//   "Backup / sync the user doesn't see?"            → .background
+//   "QoS of DispatchQueue.global()?"                 → .default
+//   "QoS of the main thread?"                        → .userInteractive
+//   "Low-priority work blocks high-priority work?"   → priority INVERSION. GCD fixes it for sync
+//        on a serial queue and for locks with an owner, by temporarily raising the low task's
+//        QoS (QoS promotion). It can't do that for a DispatchSemaphore, because a semaphore
+//        has no owner.
+//   "Does a custom queue have a QoS?"               → you can set one: DispatchQueue(label:qos:).
+//        Without one, async work inherits the QoS of the code that submitted it.
+//   "Swift concurrency equivalent?"                 → TaskPriority: .high (≈ userInitiated), .medium,
+//        .low (≈ utility), .background, plus .userInitiated / .utility aliases.
+
+#Playground("3. QoS") { demo {
+    // qos_class_self() returns the QoS of the thread the code is running on.
+    func name(_ q: qos_class_t) -> String {
+        switch q {
+        case QOS_CLASS_USER_INTERACTIVE: "userInteractive"
+        case QOS_CLASS_USER_INITIATED:   "userInitiated"
+        case QOS_CLASS_DEFAULT:          "default"
+        case QOS_CLASS_UTILITY:          "utility"
+        case QOS_CLASS_BACKGROUND:       "background"
+        default:                         "unspecified"
+        }
+    }
+
+    let group = DispatchGroup()
+
+    // PREDICT: which QoS does each block run at?
+    // (Each wait() just keeps the printed lines in order.)
+    for qos in [DispatchQoS.QoSClass.userInteractive, .userInitiated, .utility, .background] {
+        DispatchQueue.global(qos: qos).async(group: group) {
+            print("global(qos: .\(qos)) runs at:", name(qos_class_self()))
+        }
+        group.wait()
+    }
+    DispatchQueue.global().async(group: group) {
+        print("global() with no qos runs at:", name(qos_class_self()))
+    }
+    // Surprise: this prints userInitiated, not default. The queue IS .default, but async
+    // work carries the submitter's QoS along with it. Main is userInteractive, and
+    // GCD lowers that to userInitiated when it carries it to another queue.
+    group.wait()
+
+    // A custom queue with an explicit QoS
+    let imageQueue = DispatchQueue(label: "demo.images", qos: .utility)
+    imageQueue.async(group: group) {
+        print("custom queue (qos: .utility) runs at:", name(qos_class_self()))
+    }
+    group.wait()
+
+    // Inheritance: a queue with no QoS takes the QoS of whoever submitted the work.
+    let plainQueue = DispatchQueue(label: "demo.plain")
+    DispatchQueue.global(qos: .userInitiated).async(group: group) {
+        plainQueue.async(group: group) {
+            print("plain queue, submitted from userInitiated, runs at:", name(qos_class_self()))
+        }
+    }
+    group.wait()
+
+    // TRAP: sync usually runs the block on the CALLER's thread, at the caller's QoS.
+    // Called from the main thread, this prints userInteractive, not background.
+    DispatchQueue.global(qos: .background).sync {
+        print("sync onto background, called from main, runs at:", name(qos_class_self()))
+    }
+
+    // A real app: the user taps "Apply filter" and waits → userInitiated, then update the UI on main.
+    //   DispatchQueue.global(qos: .userInitiated).async {
+    //       let filtered = applyFilter(to: photo)
+    //       DispatchQueue.main.async { imageView.image = filtered }   // main = userInteractive
+    //   }
+}}
+
+// MARK: - 4. DispatchGroup: wait for many tasks, then do something
+
+#Playground("4. DispatchGroup") { demo {
     let group = DispatchGroup()
     let done = DispatchSemaphore(value: 0)   // only here to keep the playground alive
 
@@ -131,9 +238,9 @@ func demo(_ body: () -> Void) { body() }
     //   queue.async(group: g) { } is shorthand for enter()/leave() around SYNC work
 }}
 
-// MARK: - 4. Race condition, and how to fix it
+// MARK: - 5. Race condition, and how to fix it
 
-#Playground("4. Race condition") { demo {
+#Playground("5. Race condition") { demo {
     // ❌ Many threads write `unsafeCount` at the same time, so some updates get lost.
     var unsafeCount = 0
     DispatchQueue.concurrentPerform(iterations: 10_000) { _ in
@@ -145,7 +252,7 @@ func demo(_ body: () -> Void) { body() }
     var safeCount = 0
     let lock = DispatchQueue(label: "demo.counter")
     DispatchQueue.concurrentPerform(iterations: 10_000) { _ in
-        lock.sync { safeCount += 1 }
+        lock.sync { safeCount += 1   }
     }
     print("serial-queue fix:", safeCount)
 
@@ -158,11 +265,13 @@ func demo(_ body: () -> Void) { body() }
     print("NSLock fix:", lockedCount)
 }}
 
-// MARK: - 5. Barrier: many readers OR one writer
+// MARK: - 6. Barrier: many readers OR one writer
 
-#Playground("5. Barrier (reader-writer)") { demo {
+#Playground("6. Barrier (reader-writer)") { demo {
     // Classic interview question: "Make this cache thread-safe but keep reads fast."
-    final class SafeCache {
+    // @unchecked Sendable: we promise the compiler the queue makes this safe to share
+    // across threads (GCD closures are @Sendable, so it asks).
+    final class SafeCache: @unchecked Sendable {
         private var storage: [String: Int] = [:]
         private let queue = DispatchQueue(label: "demo.cache", attributes: .concurrent)
 
@@ -189,9 +298,9 @@ func demo(_ body: () -> Void) { body() }
     //   On a serial queue it's pointless (tasks already run one at a time).
 }}
 
-// MARK: - 6. DispatchSemaphore: limit how many run at once
+// MARK: - 7. DispatchSemaphore: limit how many run at once
 
-#Playground("6. Semaphore") { demo {
+#Playground("7. Semaphore") { demo {
     let semaphore = DispatchSemaphore(value: 2)   // at most 2 at a time
     let group = DispatchGroup()
 
@@ -209,9 +318,9 @@ func demo(_ body: () -> Void) { body() }
     // DispatchSemaphore(value: 0) is used to turn an async callback into a blocking wait.
 }}
 
-// MARK: - 7. asyncAfter and DispatchWorkItem (delay + cancel)
+// MARK: - 8. asyncAfter and DispatchWorkItem (delay + cancel)
 
-#Playground("7. asyncAfter + WorkItem") { demo {
+#Playground("8. asyncAfter + WorkItem") { demo {
     let queue = DispatchQueue(label: "demo.delay")
 
     queue.asyncAfter(deadline: .now() + 0.1) {
@@ -230,7 +339,7 @@ func demo(_ body: () -> Void) { body() }
     //   Long tasks should check `isCancelled` themselves.
 }}
 
-// MARK: - 8. Deadlock (read this, don't run it)
+// MARK: - 9. Deadlock (read this, don't run it)
 
 // ❌ Calling sync on the SAME serial queue you're already on:
 //
@@ -247,7 +356,7 @@ func demo(_ body: () -> Void) { body() }
 // ✅ From a background thread, DispatchQueue.main.sync is allowed, but async is usually better.
 // ✅ async never deadlocks like this, because the caller doesn't wait.
 
-// MARK: - 9. Quiz cheat sheet
+// MARK: - 10. Quiz cheat sheet
 //
 // Q: What does GCD run tasks on?             A: A system-managed thread pool. You manage queues, not threads.
 // Q: Is the main queue serial or concurrent? A: Serial.
@@ -263,8 +372,13 @@ func demo(_ body: () -> Void) { body() }
 // Q: Cancel a pending task?                  A: DispatchWorkItem.cancel(). Or use OperationQueue (it also supports dependencies).
 // Q: Run a loop in parallel and wait?        A: DispatchQueue.concurrentPerform(iterations:).
 // Q: Highest QoS?                            A: .userInteractive (lowest: .background).
+// Q: QoS for animations / event handling?    A: .userInteractive (the main thread's QoS).
+// Q: QoS when the user tapped and waits?     A: .userInitiated.
+// Q: QoS for a download with a progress bar? A: .utility.
+// Q: QoS for backups / sync / prefetch?      A: .background.
+// Q: QoS of DispatchQueue.global()?          A: .default.
 // Q: Serial queue = one thread?              A: No. One task at a time, but it may run on different threads.
 // Q: GCD vs OperationQueue?                  A: GCD is lightweight and C-based. OperationQueue is built on GCD and
 //                                               adds dependencies, cancellation, KVO state, and max concurrency.
 // Q: GCD vs Swift concurrency (async/await)? A: async/await + actors is the modern replacement. Actors prevent the
-//                                               data races in section 4 at compile time. @MainActor ≈ DispatchQueue.main.
+//                                               data races in section 5 at compile time. @MainActor ≈ DispatchQueue.main.

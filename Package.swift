@@ -11,6 +11,12 @@ let package = Package(
             name: "Solutions",
             path: "solutions"
         ),
+        // iOS interview prep: one playground file per quiz topic (see interview/README.md).
+        .target(
+            name: "Interview",
+            path: "interview",
+            exclude: ["README.md"]
+        ),
     ],
     swiftLanguageModes: [.v5]
 )
