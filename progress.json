@@ -37,6 +37,13 @@
       "link": "https://leetcode.com/problems/integer-to-roman",
       "title": "Integer to Roman"
     },
+    "linked-list-cycle": {
+      "company": "\u2014",
+      "date": "2026-10-22",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/linked-list-cycle",
+      "title": "Linked List Cycle"
+    },
     "longest-common-prefix": {
       "company": "Google",
       "date": "2026-10-20",

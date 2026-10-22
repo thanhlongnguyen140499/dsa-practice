@@ -196,6 +196,23 @@ def swift_literal(value, lc_type):
     return v
 
 
+def make_args(group, params):
+    """Swift arguments for one example. LeetCode's extra `pos` input (linked-list cycle
+    problems) isn't a real parameter; it says where the list's tail links back to."""
+    args = []
+    for value, param in zip(group, params):
+        if param["name"] == "pos" and args and args[-1].startswith("list("):
+            args[-1] = f"{args[-1][:-1]}, cycleAt: {value.strip()})"
+        else:
+            args.append(swift_literal(value, param["type"]))
+    return args
+
+
+def swift_param_count(snippet, name):
+    m = re.search(rf"func {re.escape(name)}\((.*?)\)", snippet, flags=re.S)
+    return m.group(1).count(":") if m else -1
+
+
 def build_body(q):
     snippet = next((c["code"] for c in q.get("codeSnippets") or [] if c["langSlug"] == "swift"), None)
     if not snippet:
@@ -216,15 +233,23 @@ def build_body(q):
     params = meta.get("params") or []
     groups = [inputs[i:i + len(params)] for i in range(0, len(inputs), len(params))] if params else []
 
+    name = meta.get("name", "")
+    arg_lists = [make_args(g, params) for g in groups]
     testable = ("classname" not in meta and params and "inout" not in snippet
+                and all(len(a) == swift_param_count(snippet, name) for a in arg_lists)
+                # Outputs must be values, not prose like "tail connects to node index 1".
+                and all(re.fullmatch(r'\[.*\]|".*"|-?\d+(\.\d+)?|true|false|null', o) for o in outputs)
+                # array(of:) would loop forever on a list with a cycle.
+                and not (meta.get("return", {}).get("type") == "ListNode"
+                         and any("cycleAt:" in x for a in arg_lists for x in a))
                 and meta.get("return", {}).get("type") not in (None, "void")
                 and len(groups) == len(outputs) and all(len(g) == len(params) for g in groups))
     lines += [""]
     if testable:
-        name, ret_type = meta["name"], meta["return"]["type"]
+        ret_type = meta["return"]["type"]
         lines.append("    let s = Solution()")
-        for group, out in zip(groups, outputs):
-            call = f"s.{name}({', '.join(swift_literal(v, p['type']) for v, p in zip(group, params))})"
+        for args, out in zip(arg_lists, outputs):
+            call = f"s.{name}({', '.join(args)})"
             if ret_type == "ListNode":
                 call = f"array(of: {call})"
             elif ret_type == "TreeNode":

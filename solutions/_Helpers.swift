@@ -41,7 +41,24 @@ func list(_ values: [Int]) -> ListNode? {
     return dummy.next
 }
 
-/// array(of: head) → [2, 4, 3], handy for check(...)
+/// list([3, 2, 0, -4], cycleAt: 1) → the tail (-4) links back to index 1 (2).
+/// cycleAt: -1 means no cycle. Matches LeetCode's `pos` input.
+func list(_ values: [Int], cycleAt pos: Int) -> ListNode? {
+    let head = list(values)
+    guard pos >= 0 else { return head }
+    var target: ListNode?
+    var tail = head
+    var i = 0
+    while let node = tail {
+        if i == pos { target = node }
+        if node.next == nil { node.next = target; break }
+        tail = node.next
+        i += 1
+    }
+    return head
+}
+
+/// array(of: head) → [2, 4, 3], handy for check(...)  (don't use on a list with a cycle)
 func array(of head: ListNode?) -> [Int] {
     var result: [Int] = []
     var node = head
