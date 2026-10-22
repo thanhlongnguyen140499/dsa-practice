@@ -86,6 +86,13 @@
       "link": "https://leetcode.com/problems/remove-duplicates-from-sorted-list",
       "title": "Remove Duplicates from Sorted List"
     },
+    "remove-linked-list-elements": {
+      "company": "\u2014",
+      "date": "2026-10-22",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/remove-linked-list-elements",
+      "title": "Remove Linked List Elements"
+    },
     "roman-to-integer": {
       "company": "\u2014",
       "date": "2026-10-21",
