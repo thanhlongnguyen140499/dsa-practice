@@ -23,6 +23,13 @@
       "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock",
       "title": "Best Time to Buy and Sell Stock"
     },
+    "happy-number": {
+      "company": "\u2014",
+      "date": "2026-10-22",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/happy-number",
+      "title": "Happy Number"
+    },
     "integer-to-roman": {
       "company": "\u2014",
       "date": "2026-10-21",
