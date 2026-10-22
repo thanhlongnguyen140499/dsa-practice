@@ -65,6 +65,13 @@
       "link": "https://leetcode.com/problems/merge-strings-alternately",
       "title": "Merge Strings Alternately"
     },
+    "merge-two-sorted-lists": {
+      "company": "\u2014",
+      "date": "2026-10-22",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/merge-two-sorted-lists",
+      "title": "Merge Two Sorted Lists"
+    },
     "palindrome-number": {
       "company": "Google",
       "date": "2026-10-19",
