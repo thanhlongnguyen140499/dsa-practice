@@ -58,6 +58,24 @@ func list(_ values: [Int], cycleAt pos: Int) -> ListNode? {
     return head
 }
 
+/// intersecting([4, 1, 8, 4, 5], [5, 6, 1, 8, 4, 5], skipA: 2, skipB: 3)
+/// → A: 4 -> 1 ↘
+///                8 -> 4 -> 5   (the same nodes, shared by both lists)
+///   B: 5 -> 6 -> 1 ↗
+/// Matches LeetCode's `listA, listB, skipA, skipB` input. skipA == a.count means no intersection.
+func intersecting(_ a: [Int], _ b: [Int], skipA: Int, skipB: Int) -> (ListNode?, ListNode?) {
+    let shared = list(Array(a[skipA...]))
+    func attach(_ prefix: [Int]) -> ListNode? {
+        guard let head = list(prefix) else { return shared }
+        var tail = head
+        while let next = tail.next { tail = next }
+        tail.next = shared
+        return head
+    }
+    if shared == nil { return (list(a), list(b)) }
+    return (attach(Array(a[..<skipA])), attach(Array(b[..<skipB])))
+}
+
 /// array(of: head) → [2, 4, 3], handy for check(...)  (don't use on a list with a cycle)
 func array(of head: ListNode?) -> [Int] {
     var result: [Int] = []
