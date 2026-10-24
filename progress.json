@@ -30,6 +30,13 @@
       "link": "https://leetcode.com/problems/binary-tree-inorder-traversal",
       "title": "Binary Tree Inorder Traversal"
     },
+    "binary-tree-preorder-traversal": {
+      "company": "\u2014",
+      "date": "2026-10-24",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/binary-tree-preorder-traversal",
+      "title": "Binary Tree Preorder Traversal"
+    },
     "happy-number": {
       "company": "\u2014",
       "date": "2026-10-22",
