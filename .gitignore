@@ -4,3 +4,6 @@
 xcuserdata/
 *.xcuserstate
 __pycache__/
+
+# Local scratch file
+solutions/Test-Quizz.swift
