@@ -23,6 +23,13 @@
       "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock",
       "title": "Best Time to Buy and Sell Stock"
     },
+    "binary-tree-inorder-traversal": {
+      "company": "\u2014",
+      "date": "2026-10-24",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/binary-tree-inorder-traversal",
+      "title": "Binary Tree Inorder Traversal"
+    },
     "happy-number": {
       "company": "\u2014",
       "date": "2026-10-22",
