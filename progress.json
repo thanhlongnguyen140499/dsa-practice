@@ -44,6 +44,13 @@
       "link": "https://leetcode.com/problems/binary-tree-preorder-traversal",
       "title": "Binary Tree Preorder Traversal"
     },
+    "first-unique-character-in-a-string": {
+      "company": "\u2014",
+      "date": "2026-10-25",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/first-unique-character-in-a-string",
+      "title": "First Unique Character in a String"
+    },
     "happy-number": {
       "company": "\u2014",
       "date": "2026-10-22",
