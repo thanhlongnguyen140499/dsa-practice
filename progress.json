@@ -121,6 +121,13 @@
       "link": "https://leetcode.com/problems/merge-two-sorted-lists",
       "title": "Merge Two Sorted Lists"
     },
+    "moving-average-from-data-stream": {
+      "company": "\u2014",
+      "date": "2026-10-25",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/moving-average-from-data-stream",
+      "title": "Moving Average from Data Stream"
+    },
     "number-of-recent-calls": {
       "company": "\u2014",
       "date": "2026-10-25",
