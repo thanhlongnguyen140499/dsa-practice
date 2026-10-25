@@ -51,6 +51,13 @@
       "link": "https://leetcode.com/problems/happy-number",
       "title": "Happy Number"
     },
+    "implement-queue-using-stacks": {
+      "company": "\u2014",
+      "date": "2026-10-25",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/implement-queue-using-stacks",
+      "title": "Implement Queue using Stacks"
+    },
     "implement-stack-using-queues": {
       "company": "\u2014",
       "date": "2026-10-25",
