@@ -51,6 +51,13 @@
       "link": "https://leetcode.com/problems/happy-number",
       "title": "Happy Number"
     },
+    "implement-stack-using-queues": {
+      "company": "\u2014",
+      "date": "2026-10-25",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/implement-stack-using-queues",
+      "title": "Implement Stack using Queues"
+    },
     "integer-to-roman": {
       "company": "\u2014",
       "date": "2026-10-21",
