@@ -121,6 +121,13 @@
       "link": "https://leetcode.com/problems/merge-two-sorted-lists",
       "title": "Merge Two Sorted Lists"
     },
+    "number-of-recent-calls": {
+      "company": "\u2014",
+      "date": "2026-10-25",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/number-of-recent-calls",
+      "title": "Number of Recent Calls"
+    },
     "palindrome-number": {
       "company": "Google",
       "date": "2026-10-19",
