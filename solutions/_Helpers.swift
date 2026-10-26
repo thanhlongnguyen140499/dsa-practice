@@ -28,6 +28,18 @@ public class TreeNode {
     }
 }
 
+/// First Bad Version's API. On LeetCode `bad` is hidden; in tests set it before calling.
+/// `calls` counts isBadVersion calls, so tests can check the search is O(log n).
+public class VersionControl {
+    public var bad = 1
+    public var calls = 0
+    public init() {}
+    public func isBadVersion(_ version: Int) -> Bool {
+        calls += 1
+        return version >= bad
+    }
+}
+
 // MARK: - Builders for test cases
 
 /// list([2, 4, 3]) → 2 -> 4 -> 3

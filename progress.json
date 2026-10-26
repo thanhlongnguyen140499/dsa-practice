@@ -51,6 +51,13 @@
       "link": "https://leetcode.com/problems/closest-binary-search-tree-value",
       "title": "Closest Binary Search Tree Value"
     },
+    "first-bad-version": {
+      "company": "\u2014",
+      "date": "2026-10-26",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/first-bad-version",
+      "title": "First Bad Version"
+    },
     "first-unique-character-in-a-string": {
       "company": "\u2014",
       "date": "2026-10-25",
