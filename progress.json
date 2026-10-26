@@ -163,6 +163,13 @@
       "link": "https://leetcode.com/problems/palindrome-number",
       "title": "Palindrome Number"
     },
+    "remove-duplicates-from-sorted-array": {
+      "company": "\u2014",
+      "date": "2026-10-26",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/remove-duplicates-from-sorted-array",
+      "title": "Remove Duplicates from Sorted Array"
+    },
     "remove-duplicates-from-sorted-list": {
       "company": "\u2014",
       "date": "2026-10-22",
