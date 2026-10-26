@@ -121,6 +121,13 @@
       "link": "https://leetcode.com/problems/merge-two-sorted-lists",
       "title": "Merge Two Sorted Lists"
     },
+    "missing-number": {
+      "company": "\u2014",
+      "date": "2026-10-26",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/missing-number",
+      "title": "Missing Number"
+    },
     "moving-average-from-data-stream": {
       "company": "\u2014",
       "date": "2026-10-25",
