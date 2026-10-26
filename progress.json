@@ -163,6 +163,13 @@
       "link": "https://leetcode.com/problems/roman-to-integer",
       "title": "Roman to Integer"
     },
+    "time-needed-to-buy-tickets": {
+      "company": "\u2014",
+      "date": "2026-10-25",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/time-needed-to-buy-tickets",
+      "title": "Time Needed to Buy Tickets"
+    },
     "valid-parentheses": {
       "company": "\u2014",
       "date": "2026-10-23",
