@@ -163,6 +163,13 @@
       "link": "https://leetcode.com/problems/roman-to-integer",
       "title": "Roman to Integer"
     },
+    "search-insert-position": {
+      "company": "\u2014",
+      "date": "2026-10-26",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/search-insert-position",
+      "title": "Search Insert Position"
+    },
     "time-needed-to-buy-tickets": {
       "company": "\u2014",
       "date": "2026-10-25",
