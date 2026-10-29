@@ -226,6 +226,13 @@
       "link": "https://leetcode.com/problems/time-needed-to-buy-tickets",
       "title": "Time Needed to Buy Tickets"
     },
+    "valid-palindrome": {
+      "company": "\u2014",
+      "date": "2026-10-29",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/valid-palindrome",
+      "title": "Valid Palindrome"
+    },
     "valid-parentheses": {
       "company": "\u2014",
       "date": "2026-10-23",
