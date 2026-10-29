@@ -22,7 +22,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 dsa site
-      - run: npm install --global vercel
+      # Retry: the npm registry occasionally 404s on a freshly published dependency.
+      - run: |
+          for i in 1 2 3; do npm install --global vercel && exit 0; sleep 20; done
+          exit 1
       # Links _site to the "dsa-tracker" project (created on the first run), then ships it as static files.
       - run: vercel link --yes --project dsa-tracker --token "$VERCEL_TOKEN"
         working-directory: _site
