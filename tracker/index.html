@@ -67,9 +67,15 @@
   .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); cursor: pointer; transition: transform .2s; }
   .dots i.on { background: var(--accent); transform: scale(1.3); }
   .hint { position: absolute; left: 14px; bottom: 22px; font-size: 12px; color: var(--muted); }
-  #replay { position: absolute; top: 14px; left: 14px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+  .topbar { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; z-index: 1; }
+  #replay { height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
             background: var(--glass); cursor: pointer; font-size: 13px; }
-  #replay[hidden] { display: none; }
+  #replay[hidden], #fire-badge[hidden] { display: none; }
+  #fire-badge { padding: 8px 14px; border-radius: 12px; border: 2px solid var(--accent); background: var(--glass); backdrop-filter: blur(6px);
+                box-shadow: 0 0 18px rgba(249, 115, 22, .45); }
+  #fire-badge .big { font-weight: 800; font-size: 16px; }
+  #fire-badge .small { font-size: 12px; color: var(--muted); }
+  #rain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   @media (max-width: 720px) {
     .hero { height: auto; max-height: none; min-height: 0; }
     .hero .viewport { position: relative; height: 52vh; min-height: 340px; }
@@ -148,9 +154,13 @@
   <section class="hero" id="hero" aria-label="3D tour of your categories">
     <div class="viewport">
       <div id="stage"></div>
+      <canvas id="rain" hidden></canvas>
       <div id="labels"></div>
       <div class="loading" id="loading">Loading robot…</div>
-      <button id="replay" hidden title="Replay the celebration">🎉 Replay</button>
+      <div class="topbar">
+        <button id="replay" hidden title="Replay the celebration">🎉 Replay</button>
+        <div id="fire-badge" hidden><div class="big"></div><div class="small"></div></div>
+      </div>
       <div class="hint">← → to walk</div>
       <div class="nav">
         <button id="prev" aria-label="Previous station">←</button>
@@ -190,6 +200,7 @@
 <script>
 const DATA = /*__DATA__*/null || { repo: null, problems: [] };
 const GOAL = 3;
+const ON_FIRE = 5;           // problems in one day that keep the celebration running all day
 const WEEKS = 26;
 const MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
 const COLORS = ["#f97316", "#3b82f6", "#a855f7", "#10b981", "#ef4444", "#eab308", "#06b6d4", "#ec4899"];
@@ -437,14 +448,65 @@ let heroReady = false;
 addEventListener("hero-ready", () => { heroReady = true; });
 setTimeout(() => { if (!heroReady) document.getElementById("hero").classList.add("failed"); }, 12000);
 
-window.TRACKER = { stations, get current() { return current; }, REDUCED, startPendingCelebration };
+// ---------- on fire: 5+ today keeps the party going ----------
+const onFire = todayCount >= ON_FIRE;
+if (onFire) {
+  const badge = document.getElementById("fire-badge");
+  badge.hidden = false;
+  badge.querySelector(".big").textContent = `🔥 ${streak}-day streak`;
+  badge.querySelector(".small").textContent = `On fire: ${todayCount} solved today`;
+  if (!REDUCED) rain();
+}
+
+// Light confetti drizzle over the 3D view, for as long as the page is open.
+function rain() {
+  const canvas = document.getElementById("rain");
+  const ctx = canvas.getContext("2d");
+  canvas.hidden = false;
+  const bits = [];
+  let w = 0, h = 0;
+  const size = () => {
+    const dpr = devicePixelRatio || 1;
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  new ResizeObserver(size).observe(canvas);
+  size();
+  const spawn = top => ({
+    x: Math.random() * w, y: top ? -10 : Math.random() * h,
+    vy: .6 + Math.random() * .9, sway: Math.random() * Math.PI * 2,
+    r: Math.random() * Math.PI, vr: (Math.random() - .5) * .08,
+    s: 4 + Math.random() * 4, c: COLORS[Math.floor(Math.random() * COLORS.length)],
+  });
+  for (let i = 0; i < 45; i++) bits.push(spawn(false));
+  (function frame(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < bits.length; i++) {
+      const b = bits[i];
+      b.y += b.vy; b.x += Math.sin(t / 900 + b.sway) * .4; b.r += b.vr;
+      if (b.y > h + 10) bits[i] = spawn(true);
+      ctx.save();
+      ctx.translate(b.x, b.y); ctx.rotate(b.r);
+      ctx.globalAlpha = .85;
+      ctx.fillStyle = b.c;
+      ctx.fillRect(-b.s / 2, -b.s / 4, b.s, b.s / 2 * Math.abs(Math.cos(b.r * 2)) + 1);
+      ctx.restore();
+    }
+    requestAnimationFrame(frame);
+  })(performance.now());
+}
+
+window.TRACKER = { stations, get current() { return current; }, REDUCED, onFire, startPendingCelebration };
 </script>
 
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-const { stations, REDUCED } = window.TRACKER;
+const { stations, REDUCED, onFire } = window.TRACKER;
+// On fire (5+ today) the robot dances instead of idling.
+const REST = onFire && !REDUCED ? "Dance" : "Idle";
 const hero = document.getElementById("hero");
 const stage = document.getElementById("stage");
 const labelsEl = document.getElementById("labels");
@@ -566,6 +628,59 @@ stations.forEach((s, i) => {
   labels.push({ el: tag, pos: new THREE.Vector3(x, 5.4, 0) });
 });
 
+// Fire aura: flame sparks rising around the robot plus a flickering orange light, while on fire.
+const fire = onFire && !REDUCED ? makeFire() : null;
+function makeFire() {
+  const N = 90;
+  const spark = document.createElement("canvas");
+  spark.width = spark.height = 64;
+  const sctx = spark.getContext("2d");
+  const grad = sctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(.3, "rgba(255,200,80,.9)");
+  grad.addColorStop(1, "rgba(255,80,0,0)");
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, 64, 64);
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const points = new THREE.Points(geo, new THREE.PointsMaterial({
+    size: 0.45, map: new THREE.CanvasTexture(spark), vertexColors: true,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  points.frustumCulled = false;
+  scene.add(points);
+  const light = new THREE.PointLight(0xff7a1a, 30, 9);
+  scene.add(light);
+  const sparks = Array.from({ length: N }, () => ({ life: Math.random() }));
+  const hot = new THREE.Color(0xffd27a), cool = new THREE.Color(0xff3d00), c = new THREE.Color();
+  return { pos, col, geo, light, sparks, hot, cool, c };
+}
+function updateFire(dt, t) {
+  const { pos, col, geo, light, sparks, hot, cool, c } = fire;
+  const cx = robot.position.x;
+  sparks.forEach((s, i) => {
+    s.life += dt * (0.5 + (i % 7) * 0.06);
+    if (s.life >= 1 || s.angle === undefined) {
+      s.life %= 1;
+      s.angle = Math.random() * Math.PI * 2;
+      s.radius = 1.2 + Math.random() * 0.6;
+    }
+    const a = s.angle + s.life * 1.5;
+    const r = s.radius * (1 - s.life * 0.45);
+    pos[i * 3] = cx + Math.cos(a) * r;
+    pos[i * 3 + 1] = 0.2 + s.life * 3.4;
+    pos[i * 3 + 2] = Math.sin(a) * r;
+    c.copy(hot).lerp(cool, s.life).multiplyScalar(1 - s.life);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  });
+  geo.attributes.position.needsUpdate = true;
+  geo.attributes.color.needsUpdate = true;
+  light.position.set(cx, 1.2, 0.8);
+  light.intensity = 25 + Math.sin(t * 13) * 6 + Math.sin(t * 7.3) * 5;
+}
+
 // Robot + animations.
 let robot, mixer, actions = {}, active;
 let state = "idle";          // idle | walking | emote
@@ -608,7 +723,7 @@ window.hero = {
     const dance = () => {
       state = "emote";
       play("Dance", { fade: 0.3 });
-      danceTimer = setTimeout(() => { state = "idle"; play("Idle", { fade: 0.5 }); }, isMilestone ? 6000 : 4500);
+      danceTimer = setTimeout(() => { state = "idle"; play(REST, { fade: 0.5 }); }, isMilestone ? 6000 : 4500);
     };
     if (state === "walking") return;
     if (isMilestone && !REDUCED) emote("Jump", dance);
@@ -631,9 +746,9 @@ new GLTFLoader().load("assets/RobotExpressive.glb", gltf => {
     const then = e.action.userData_then;
     e.action.userData_then = null;
     if (then) then();
-    else { state = "idle"; play("Idle", { fade: 0.4 }); }
+    else { state = "idle"; play(REST, { fade: 0.4 }); }
   });
-  play("Idle", { fade: 0 });
+  play(REST, { fade: 0 });
   document.getElementById("loading").remove();
   if (!REDUCED) emote("Wave");
   dispatchEvent(new Event("hero-ready"));
@@ -672,12 +787,13 @@ renderer.setAnimationLoop(() => {
         robot.position.x = targetX;
         yawTarget = 0;
         state = "idle";
-        play("Idle", { fade: 0.2 });
+        play(REST, { fade: 0.2 });
         if (!REDUCED) emote("ThumbsUp");
       }
     }
     robot.rotation.y += (yawTarget - robot.rotation.y) * Math.min(1, dt * 8);
     mixer.update(dt);
+    if (fire) updateFire(dt, t);
   }
 
   const focusX = (robot ? robot.position.x : window.TRACKER.current * SPACING) + frameOffset;
