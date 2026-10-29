@@ -20,7 +20,7 @@ import Playgrounds
         //  [5, 6, 4]
         func addTwoNumbers(_ l1: ListNode?, _ l2: ListNode?) -> ListNode {
 
-            var dummy = ListNode(0)
+            let dummy = ListNode(0)
             var tail = dummy
             var sum: Int = 0
             var p1 = l1

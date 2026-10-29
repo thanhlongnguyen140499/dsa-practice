@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSA Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #667085; --line: #e4e7ec;
+    --accent: #f97316; --good: #16a34a;
+    --h0: #ebedf0; --h1: #c6e9c9; --h2: #7fcf87; --h3: #3aa54a; --h4: #1d6f2b;
+    --easy: #16a34a; --medium: #d97706; --hard: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #30363d;
+      --h0: #21262d; --h1: #0e4429; --h2: #006d32; --h3: #26a641; --h4: #39d353;
+      --easy: #3fb950; --medium: #d29922; --hard: #f85149;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; }
+  a { color: inherit; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat .label { color: var(--muted); font-size: 13px; }
+  .stat .value { font-size: 28px; font-weight: 700; line-height: 1.2; }
+  .stat .note { font-size: 12px; color: var(--muted); }
+  .stat.streak .value { color: var(--accent); }
+  .bar { height: 8px; background: var(--h0); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); transition: width .3s; }
+  .bar.done > div { background: var(--good); }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  .heat-wrap { overflow-x: auto; }
+  .heat { display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; grid-auto-columns: 13px; gap: 3px; width: max-content; }
+  .heat .d { border-radius: 3px; background: var(--h0); }
+  .heat .d.c1 { background: var(--h1); } .heat .d.c2 { background: var(--h2); }
+  .heat .d.c3 { background: var(--h3); } .heat .d.c4 { background: var(--h4); }
+  .heat .d.goal { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .heat .d.today { outline: 2px solid var(--text); outline-offset: -1px; }
+  .heat .d.future { visibility: hidden; }
+  .legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+
+  .cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+  details.card { padding: 0; }
+  details summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary .name { font-weight: 600; }
+  details summary .count { font-size: 22px; font-weight: 700; }
+  details summary .split { font-size: 12px; color: var(--muted); }
+  details[open] summary { border-bottom: 1px solid var(--line); }
+
+  ul.list { list-style: none; margin: 0; padding: 4px 0; }
+  ul.list li { display: flex; gap: 8px; align-items: baseline; padding: 6px 16px; }
+  ul.list li .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  ul.list li .t a { text-decoration: none; }
+  ul.list li .t a:hover { text-decoration: underline; }
+  ul.list li .meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  ul.list li .code { color: var(--muted); font-size: 12px; text-decoration: none; }
+  .badge { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; }
+  .badge.Easy { color: var(--easy); } .badge.Medium { color: var(--medium); } .badge.Hard { color: var(--hard); }
+  .badge.unknown { color: var(--muted); }
+  .empty { color: var(--muted); padding: 8px 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>DSA Tracker</h1>
+  <p class="sub" id="sub"></p>
+
+  <section class="stats">
+    <div class="card stat streak"><div class="label">Current streak</div><div class="value" id="streak"></div><div class="note" id="streak-note"></div></div>
+    <div class="card stat"><div class="label">Longest streak</div><div class="value" id="longest"></div><div class="note">days with ≥ <span class="goal-n"></span> solved</div></div>
+    <div class="card stat"><div class="label">Total solved</div><div class="value" id="total"></div><div class="note" id="total-note"></div></div>
+    <div class="card stat"><div class="label">Today</div><div class="value" id="today"></div><div class="bar" id="today-bar"><div></div></div></div>
+  </section>
+
+  <h2>Activity</h2>
+  <div class="card">
+    <div class="heat-wrap" id="heat-wrap"><div class="heat" id="heat"></div></div>
+    <div class="legend">
+      <span>Less <i style="background:var(--h0)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> More</span>
+      <span><i style="outline:2px solid var(--accent);outline-offset:-1px;background:var(--h0)"></i>≥ <span class="goal-n"></span> solved (streak day)</span>
+    </div>
+  </div>
+
+  <h2>Today</h2>
+  <div class="card" style="padding:0"><ul class="list" id="today-list"></ul></div>
+
+  <h2>Categories</h2>
+  <section class="cats" id="cats"></section>
+
+  <h2>Recent</h2>
+  <div class="card" style="padding:0"><ul class="list" id="recent"></ul></div>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null || { repo: null, problems: [] };
+const GOAL = 3;
+const WEEKS = 26;
+
+const pad = n => String(n).padStart(2, "0");
+const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const fmt = s => parse(s).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const pretty = c => c.replace(/([a-z])([A-Z])/g, "$1 $2");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const problems = DATA.problems.slice().sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
+const byDay = {};
+for (const p of problems) (byDay[p.date] ||= []).push(p);
+const count = k => (byDay[k] || []).length;
+
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const todayKey = key(today);
+
+// Current streak: consecutive days with >= GOAL ending today, or yesterday if today isn't done yet.
+let cursor = count(todayKey) >= GOAL ? today : addDays(today, -1);
+let streak = 0;
+while (count(key(cursor)) >= GOAL) { streak++; cursor = addDays(cursor, -1); }
+const todayDone = count(todayKey) >= GOAL;
+
+let longest = 0, run = 0, prev = null;
+for (const k of Object.keys(byDay).filter(k => count(k) >= GOAL).sort()) {
+  run = prev && key(addDays(parse(prev), 1)) === k ? run + 1 : 1;
+  longest = Math.max(longest, run);
+  prev = k;
+}
+
+document.querySelectorAll(".goal-n").forEach(e => e.textContent = GOAL);
+document.getElementById("sub").textContent = `Solve at least ${GOAL} problems a day to keep the streak.`;
+document.getElementById("streak").textContent = `🔥 ${streak}`;
+document.getElementById("streak-note").textContent =
+  todayDone ? "Today counted ✓" :
+  streak > 0 ? `At risk: ${GOAL - count(todayKey)} more today` :
+  `Solve ${GOAL - count(todayKey)} today to start one`;
+document.getElementById("longest").textContent = longest;
+document.getElementById("total").textContent = problems.length;
+const diffs = ["Easy", "Medium", "Hard"].map(d => [d, problems.filter(p => p.difficulty === d).length]).filter(([, n]) => n);
+document.getElementById("total-note").textContent = diffs.map(([d, n]) => `${n} ${d}`).join(" · ");
+document.getElementById("today").textContent = `${count(todayKey)} / ${GOAL}`;
+const bar = document.getElementById("today-bar");
+bar.firstElementChild.style.width = `${Math.min(100, count(todayKey) / GOAL * 100)}%`;
+bar.classList.toggle("done", todayDone);
+
+// Heatmap: WEEKS columns, Monday-first rows, ending with the current week.
+const heat = document.getElementById("heat");
+const start = addDays(today, -((today.getDay() + 6) % 7) - (WEEKS - 1) * 7);
+for (let i = 0; i < WEEKS * 7; i++) {
+  const d = addDays(start, i), k = key(d), n = count(k);
+  const cell = document.createElement("div");
+  cell.className = "d";
+  if (d > today) cell.classList.add("future");
+  else {
+    if (n) cell.classList.add(`c${Math.min(4, n)}`);
+    if (n >= GOAL) cell.classList.add("goal");
+    if (k === todayKey) cell.classList.add("today");
+    cell.title = `${fmt(k)}: ${n} solved` + (n ? "\n" + byDay[k].map(p => "• " + p.title).join("\n") : "");
+  }
+  heat.appendChild(cell);
+}
+const wrap = document.getElementById("heat-wrap");
+wrap.scrollLeft = wrap.scrollWidth;
+
+function row(p, { showDate = true, showCat = false } = {}) {
+  const badge = p.difficulty === "?" ? `<span class="badge unknown">?</span>` : `<span class="badge ${p.difficulty}">${p.difficulty}</span>`;
+  const meta = [showCat ? pretty(p.category) : null, showDate ? fmt(p.date) : null].filter(Boolean).join(" · ");
+  const code = DATA.repo ? `<a class="code" href="${esc(DATA.repo)}/blob/main/${esc(p.path)}" target="_blank" rel="noopener" title="My solution">code</a>` : "";
+  return `<li>${badge}<span class="t"><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.title)}</a></span><span class="meta">${esc(meta)}</span>${code}</li>`;
+}
+
+const todays = byDay[todayKey] || [];
+document.getElementById("today-list").innerHTML = todays.length
+  ? todays.map(p => row(p, { showDate: false, showCat: true })).join("")
+  : `<li class="empty">Nothing yet today — commit a solution to get started.</li>`;
+
+const cats = {};
+for (const p of problems) (cats[p.category] ||= []).push(p);
+document.getElementById("cats").innerHTML = Object.entries(cats)
+  .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+  .map(([c, list]) => {
+    const split = ["Easy", "Medium", "Hard"].map(d => [d, list.filter(p => p.difficulty === d).length]).filter(([, n]) => n)
+      .map(([d, n]) => `${n} ${d}`).join(" · ");
+    return `<details class="card"><summary><span><span class="name">${esc(pretty(c))}</span><br><span class="split">${esc(split)}</span></span><span class="count">${list.length}</span></summary>
+      <ul class="list">${list.map(p => row(p)).join("")}</ul></details>`;
+  }).join("") || `<div class="card empty">No solutions yet. Put them in solutions/&lt;Category&gt;/.</div>`;
+
+document.getElementById("recent").innerHTML = problems.slice(0, 10).map(p => row(p, { showCat: true })).join("")
+  || `<li class="empty">No solutions yet.</li>`;
+</script>
+</body>
+</html>

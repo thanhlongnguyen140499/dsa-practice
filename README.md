@@ -11,6 +11,7 @@ Problem lists come from [`leetcode-company-wise-problems`](leetcode-company-wise
 ./dsa open two-sum                   # open the package + that file in Xcode
 ./dsa done two-sum                   # mark solved (./dsa undo two-sum to revert)
 ./dsa status Google                  # overall + per-company progress
+./dsa site --open                    # build + open the tracker page locally
 ```
 
 Filters: `-p 30d|3m|6m|older|all`, `-d easy|medium|hard`, `-t <topic substring>`.
@@ -25,6 +26,13 @@ SQL (Database) and Shell problems are skipped automatically.
 
 `solutions/_Helpers.swift` provides `check`, LeetCode's `ListNode` / `TreeNode`, and the test builders
 `list([1,2,3])`, `array(of:)`, `tree([3,9,20,nil,nil,15,7])` and `levelOrder(of:)`.
+
+## Tracker
+
+**https://thanhlongnguyen140499.github.io/dsa-practice/** — rebuilt by GitHub Actions on every push.
+
+A problem counts as finished on the day its file in `solutions/<Category>/` is first committed; the folder is its category.
+The streak counts days with at least 3 finished problems. Files directly in `solutions/` aren't counted.
 
 The problem lists are a git submodule. Clone this repo with:
 

@@ -33,8 +33,8 @@ import Playgrounds
             var closest: Int = current?.val ?? 0
 
             while let node = current {
-                var diff = abs(Double(node.val) - target)
-                var best = abs(Double(closest) - target)
+                let diff = abs(Double(node.val) - target)
+                let best = abs(Double(closest) - target)
 
                 if diff < best || (diff == best && node.val < closest) {
                     closest = node.val

@@ -51,6 +51,13 @@
       "link": "https://leetcode.com/problems/closest-binary-search-tree-value",
       "title": "Closest Binary Search Tree Value"
     },
+    "find-the-index-of-the-first-occurrence-in-a-string": {
+      "company": "\u2014",
+      "date": "2026-10-29",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-string",
+      "title": "Find the Index of the First Occurrence in a String"
+    },
     "first-bad-version": {
       "company": "\u2014",
       "date": "2026-10-26",

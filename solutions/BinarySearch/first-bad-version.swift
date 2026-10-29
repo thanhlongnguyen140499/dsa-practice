@@ -31,7 +31,7 @@ import Playgrounds
             var hi: Int = n
 
             while lo < hi {
-                var mid = lo + (hi - lo) / 2
+                let mid = lo + (hi - lo) / 2
 
                 if isBadVersion(mid) {
                     hi = mid

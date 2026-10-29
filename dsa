@@ -10,6 +10,7 @@ Usage:
   ./dsa done <slug> / ./dsa undo <slug>         mark a problem solved / unsolved
   ./dsa regen [slug...] [--force]               rebuild untouched files with LeetCode's signature + tests
   ./dsa status [company]                        show progress
+  ./dsa site [--open]                           build the tracker page into _site/index.html
 
 Filters:
   -p/--period  30d | 3m | 6m | older | all   (default: all)
@@ -470,6 +471,70 @@ def cmd_status(args):
                 print(f"{company} {period:>5}: {done}/{len(problems)} solved")
 
 
+# ---------- tracker site ----------
+
+def git(*args):
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+
+
+def repo_url():
+    """https://github.com/<owner>/<repo> from the origin remote (credentials stripped)."""
+    m = re.search(r"github\.com[:/](.+?)(?:\.git)?$", git("remote", "get-url", "origin"))
+    return f"https://github.com/{m.group(1)}" if m else None
+
+
+def finished_date(path):
+    """Day the file was first committed (follows moves), or None if it isn't committed yet."""
+    dates = git("log", "--follow", "--diff-filter=A", "--format=%ad", "--date=short", "--", str(path.relative_to(ROOT)))
+    return dates.splitlines()[-1] if dates else None
+
+
+def parse_header(path, slug):
+    """Title / difficulty / topics / link from the header that render() writes."""
+    lines = path.read_text().splitlines()[:3]
+    info = {"title": slug.replace("-", " ").title(), "difficulty": "?", "topics": [],
+            "link": f"https://leetcode.com/problems/{slug}"}
+    if len(lines) == 3 and all(l.startswith("// ") for l in lines):
+        title, meta, link = (l[3:].strip() for l in lines)
+        difficulty, _, topics = meta.partition(" · ")
+        if difficulty in ("Easy", "Medium", "Hard"):
+            info["difficulty"] = difficulty
+            info["topics"] = [t.strip() for t in topics.split(",") if t.strip() and t.strip() != "—"]
+        info["title"] = title
+        m = re.match(r"https?://\S+", link)
+        if m:
+            info["link"] = m.group(0)
+    return info
+
+
+def cmd_site(args):
+    problems = []
+    for path in sorted(SOLUTIONS.glob("*/*.swift")):
+        if path.name.startswith("_"):
+            continue
+        day = finished_date(path)
+        if not day:
+            continue
+        slug = path.stem
+        problems.append({
+            "slug": slug,
+            "category": path.parent.name,
+            "date": day,
+            "path": str(path.relative_to(ROOT)),
+            **parse_header(path, slug),
+        })
+    data = {"repo": repo_url(), "problems": problems}
+    page = (ROOT / "tracker" / "index.html").read_text()
+    page = page.replace("/*__DATA__*/null", json.dumps(data).replace("</", "<\\/"))
+    out = ROOT / "_site" / "index.html"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(page)
+    categories = len({p["category"] for p in problems})
+    print(f"Wrote {out.relative_to(ROOT)}: {len(problems)} problems in {categories} categories")
+    if args.open:
+        subprocess.call(["open", str(out)])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -497,6 +562,8 @@ def main():
     p = sub.add_parser("done"); p.add_argument("slug"); p.set_defaults(func=cmd_done)
     p = sub.add_parser("undo"); p.add_argument("slug"); p.set_defaults(func=cmd_undo)
     p = sub.add_parser("status"); p.add_argument("company", nargs="?"); p.set_defaults(func=cmd_status)
+    p = sub.add_parser("site"); p.add_argument("--open", action="store_true", help="open the page in your browser")
+    p.set_defaults(func=cmd_site)
 
     args = parser.parse_args()
     args.func(args)
