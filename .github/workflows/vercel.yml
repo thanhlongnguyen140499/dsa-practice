@@ -1,0 +1,30 @@
+name: Tracker site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history: finished dates come from git log
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 dsa site
+      - run: npm install --global vercel
+      # Links _site to the "dsa-tracker" project (created on the first run), then ships it as static files.
+      - run: vercel link --yes --project dsa-tracker --token "$VERCEL_TOKEN"
+        working-directory: _site
+      - run: vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        working-directory: _site

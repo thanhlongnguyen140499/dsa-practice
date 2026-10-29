@@ -29,7 +29,8 @@ SQL (Database) and Shell problems are skipped automatically.
 
 ## Tracker
 
-**https://thanhlongnguyen140499.github.io/dsa-practice/** — rebuilt by GitHub Actions on every push.
+Deployed to Vercel (project `dsa-tracker`) by GitHub Actions on every push to `main`.
+Needs a `VERCEL_TOKEN` repo secret (vercel.com/account/tokens → GitHub repo Settings → Secrets and variables → Actions).
 
 A problem counts as finished on the day its file in `solutions/<Category>/` is first committed; the folder is its category.
 The streak counts days with at least 3 finished problems. Files directly in `solutions/` aren't counted.
