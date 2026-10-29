@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "5 17 * * *"  # 00:05 in Vietnam: rebuild so the README card's streak rolls over to the new day
 
 concurrency:
   group: vercel
@@ -14,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      TZ: Asia/Ho_Chi_Minh  # "today" for the streak, same as the local machine
     steps:
       - uses: actions/checkout@v4
         with:

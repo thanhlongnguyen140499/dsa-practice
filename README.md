@@ -1,5 +1,14 @@
 # DSA practice
 
+<a href="https://dsa-tracker-sandy-kappa.vercel.app/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://dsa-tracker-sandy-kappa.vercel.app/card-dark.svg">
+    <img alt="DSA Tracker: streak, problems solved and the last 16 weeks" src="https://dsa-tracker-sandy-kappa.vercel.app/card-light.svg">
+  </picture>
+</a>
+
+**[Open the live tracker →](https://dsa-tracker-sandy-kappa.vercel.app/)** (3D robot, streak celebrations, full history)
+
 Problem lists come from [`leetcode-company-wise-problems`](leetcode-company-wise-problems). This folder is a Swift package. Each file in `solutions/` has a `#Playground` block that runs in Xcode's canvas. My progress is tracked in `progress.json`.
 
 ```bash
@@ -29,7 +38,8 @@ SQL (Database) and Shell problems are skipped automatically.
 
 ## Tracker
 
-Deployed to Vercel (project `dsa-tracker`) by GitHub Actions on every push to `main`.
+Deployed to Vercel (project `dsa-tracker`) by GitHub Actions on every push to `main`, and once a day at 00:05 (Vietnam time)
+so the streak rolls over. The card at the top of this README is `card-dark.svg` / `card-light.svg` from the same deploy.
 Needs a `VERCEL_TOKEN` repo secret (vercel.com/account/tokens → GitHub repo Settings → Secrets and variables → Actions).
 
 A problem counts as finished on the day its file in `solutions/<Category>/` is first committed; the folder is its category.
