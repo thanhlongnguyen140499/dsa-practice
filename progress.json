@@ -170,6 +170,13 @@
       "link": "https://leetcode.com/problems/palindrome-number",
       "title": "Palindrome Number"
     },
+    "power-of-two": {
+      "company": "\u2014",
+      "date": "2026-10-29",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/power-of-two",
+      "title": "Power of Two"
+    },
     "remove-duplicates-from-sorted-array": {
       "company": "\u2014",
       "date": "2026-10-26",
