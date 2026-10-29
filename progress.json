@@ -177,6 +177,13 @@
       "link": "https://leetcode.com/problems/remove-duplicates-from-sorted-list",
       "title": "Remove Duplicates from Sorted List"
     },
+    "remove-element": {
+      "company": "\u2014",
+      "date": "2026-10-29",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/remove-element",
+      "title": "Remove Element"
+    },
     "remove-linked-list-elements": {
       "company": "\u2014",
       "date": "2026-10-22",
