@@ -5,18 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DSA Tracker</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
 <style>
   :root {
     --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #667085; --line: #e4e7ec;
     --accent: #f97316; --good: #16a34a;
     --h0: #ebedf0; --h1: #c6e9c9; --h2: #7fcf87; --h3: #3aa54a; --h4: #1d6f2b;
     --easy: #16a34a; --medium: #d97706; --hard: #dc2626;
+    --scene: #dfe4ea; --glass: rgba(255, 255, 255, .82);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #30363d;
       --h0: #21262d; --h1: #0e4429; --h2: #006d32; --h3: #26a641; --h4: #39d353;
       --easy: #3fb950; --medium: #d29922; --hard: #f85149;
+      --scene: #1c2128; --glass: rgba(22, 27, 34, .82);
     }
   }
   * { box-sizing: border-box; }
@@ -28,9 +36,63 @@
   h1 { font-size: 24px; margin: 0 0 4px; }
   h2 { font-size: 16px; margin: 32px 0 12px; }
   a { color: inherit; }
+  button { font: inherit; color: inherit; }
   .sub { color: var(--muted); margin: 0 0 20px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
 
+  /* ---------- hero ---------- */
+  .hero { position: relative; height: 62vh; min-height: 420px; max-height: 640px; border-radius: 16px; overflow: hidden;
+          background: var(--scene); border: 1px solid var(--line); margin-bottom: 20px; }
+  .hero.failed { display: none; }
+  #stage, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+  #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .tag { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; padding: 3px 10px; border-radius: 999px;
+         font-size: 13px; font-weight: 600; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(6px);
+         transition: opacity .2s; }
+  .tag b { color: var(--tag); margin-left: 4px; }
+  .tag.far { opacity: .45; }
+  .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 14px; }
+  .panel { position: absolute; top: 14px; right: 14px; width: 300px; max-height: calc(100% - 90px); overflow: auto;
+           background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 12px; padding: 14px 0 6px; }
+  .panel .head { padding: 0 16px; }
+  .panel .kicker { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .panel .title { font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .panel .title span { color: var(--station); }
+  .panel .meta { font-size: 13px; color: var(--muted); }
+  .nav { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; align-items: center; gap: 12px; }
+  .nav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass);
+                backdrop-filter: blur(6px); cursor: pointer; font-size: 18px; }
+  .nav button:disabled { opacity: .35; cursor: default; }
+  .dots { display: flex; gap: 6px; padding: 8px 10px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); cursor: pointer; transition: transform .2s; }
+  .dots i.on { background: var(--accent); transform: scale(1.3); }
+  .hint { position: absolute; left: 14px; bottom: 22px; font-size: 12px; color: var(--muted); }
+  #replay { position: absolute; top: 14px; left: 14px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+            background: var(--glass); cursor: pointer; font-size: 13px; }
+  #replay[hidden] { display: none; }
+  @media (max-width: 720px) {
+    .hero { height: auto; max-height: none; min-height: 0; }
+    .hero .viewport { position: relative; height: 52vh; min-height: 340px; }
+    .panel { position: static; width: auto; max-height: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; backdrop-filter: none; }
+    .hint { display: none; }
+    .nav button { width: 48px; height: 48px; }
+  }
+  @media (min-width: 721px) { .hero .viewport { position: absolute; inset: 0; } }
+
+  /* ---------- celebration ---------- */
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+  .banner { position: fixed; left: 50%; top: 16px; z-index: 21; transform: translate(-50%, calc(-100% - 60px)); visibility: hidden; transition: transform .5s cubic-bezier(.2, 1.4, .4, 1), visibility .5s;
+            background: var(--card); border: 2px solid var(--accent); border-radius: 14px; padding: 12px 22px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25); max-width: calc(100% - 32px); }
+  .banner.show { transform: translate(-50%, 0); visibility: visible; }
+  .banner .big { font-size: 22px; font-weight: 800; }
+  .banner .small { font-size: 13px; color: var(--muted); }
+  @keyframes flicker { 0%, 100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.15) rotate(3deg); } }
+  .flame { display: inline-block; }
+  .alive .flame { animation: flicker 1.2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .alive .flame { animation: none; } .banner { transition: none; } }
+
+  /* ---------- dashboard ---------- */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .stat .label { color: var(--muted); font-size: 13px; }
   .stat .value { font-size: 28px; font-weight: 700; line-height: 1.2; }
@@ -59,6 +121,7 @@
   details summary .name { font-weight: 600; }
   details summary .count { font-size: 22px; font-weight: 700; }
   details summary .split { font-size: 12px; color: var(--muted); }
+  details summary .visit { font-size: 12px; border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 8px; cursor: pointer; margin-left: 8px; }
   details[open] summary { border-bottom: 1px solid var(--line); }
 
   ul.list { list-style: none; margin: 0; padding: 4px 0; }
@@ -75,9 +138,28 @@
 </style>
 </head>
 <body>
+<canvas id="confetti" hidden></canvas>
+<div class="banner" id="banner" role="status" aria-live="polite"><div class="big" id="banner-big"></div><div class="small" id="banner-small"></div></div>
+
 <main>
   <h1>DSA Tracker</h1>
   <p class="sub" id="sub"></p>
+
+  <section class="hero" id="hero" aria-label="3D tour of your categories">
+    <div class="viewport">
+      <div id="stage"></div>
+      <div id="labels"></div>
+      <div class="loading" id="loading">Loading robot…</div>
+      <button id="replay" hidden title="Replay the celebration">🎉 Replay</button>
+      <div class="hint">← → to walk</div>
+      <div class="nav">
+        <button id="prev" aria-label="Previous station">←</button>
+        <div class="dots" id="dots"></div>
+        <button id="next" aria-label="Next station">→</button>
+      </div>
+    </div>
+    <aside class="panel" id="panel"></aside>
+  </section>
 
   <section class="stats">
     <div class="card stat streak"><div class="label">Current streak</div><div class="value" id="streak"></div><div class="note" id="streak-note"></div></div>
@@ -109,6 +191,9 @@
 const DATA = /*__DATA__*/null || { repo: null, problems: [] };
 const GOAL = 3;
 const WEEKS = 26;
+const MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
+const COLORS = ["#f97316", "#3b82f6", "#a855f7", "#10b981", "#ef4444", "#eab308", "#06b6d4", "#ec4899"];
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const pad = n => String(n).padStart(2, "0");
 const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -117,6 +202,8 @@ const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date
 const fmt = s => parse(s).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const pretty = c => c.replace(/([a-z])([A-Z])/g, "$1 $2");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const splitOf = list => ["Easy", "Medium", "Hard"].map(d => [d, list.filter(p => p.difficulty === d).length]).filter(([, n]) => n)
+  .map(([d, n]) => `${n} ${d}`).join(" · ");
 
 const problems = DATA.problems.slice().sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
 const byDay = {};
@@ -125,12 +212,13 @@ const count = k => (byDay[k] || []).length;
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const todayKey = key(today);
+const todayCount = count(todayKey);
+const todayDone = todayCount >= GOAL;
 
 // Current streak: consecutive days with >= GOAL ending today, or yesterday if today isn't done yet.
-let cursor = count(todayKey) >= GOAL ? today : addDays(today, -1);
+let cursor = todayDone ? today : addDays(today, -1);
 let streak = 0;
 while (count(key(cursor)) >= GOAL) { streak++; cursor = addDays(cursor, -1); }
-const todayDone = count(todayKey) >= GOAL;
 
 let longest = 0, run = 0, prev = null;
 for (const k of Object.keys(byDay).filter(k => count(k) >= GOAL).sort()) {
@@ -139,20 +227,21 @@ for (const k of Object.keys(byDay).filter(k => count(k) >= GOAL).sort()) {
   prev = k;
 }
 
+const streakNote = todayDone ? "Today counted ✓" :
+  streak > 0 ? `At risk: ${GOAL - todayCount} more today` :
+  `Solve ${GOAL - todayCount} today to start one`;
+
 document.querySelectorAll(".goal-n").forEach(e => e.textContent = GOAL);
 document.getElementById("sub").textContent = `Solve at least ${GOAL} problems a day to keep the streak.`;
-document.getElementById("streak").textContent = `🔥 ${streak}`;
-document.getElementById("streak-note").textContent =
-  todayDone ? "Today counted ✓" :
-  streak > 0 ? `At risk: ${GOAL - count(todayKey)} more today` :
-  `Solve ${GOAL - count(todayKey)} today to start one`;
+document.getElementById("streak").innerHTML = `<span class="flame">🔥</span> ${streak}`;
+document.querySelector(".stat.streak").classList.toggle("alive", streak > 0);
+document.getElementById("streak-note").textContent = streakNote;
 document.getElementById("longest").textContent = longest;
 document.getElementById("total").textContent = problems.length;
-const diffs = ["Easy", "Medium", "Hard"].map(d => [d, problems.filter(p => p.difficulty === d).length]).filter(([, n]) => n);
-document.getElementById("total-note").textContent = diffs.map(([d, n]) => `${n} ${d}`).join(" · ");
-document.getElementById("today").textContent = `${count(todayKey)} / ${GOAL}`;
+document.getElementById("total-note").textContent = splitOf(problems);
+document.getElementById("today").textContent = `${todayCount} / ${GOAL}`;
 const bar = document.getElementById("today-bar");
-bar.firstElementChild.style.width = `${Math.min(100, count(todayKey) / GOAL * 100)}%`;
+bar.firstElementChild.style.width = `${Math.min(100, todayCount / GOAL * 100)}%`;
 bar.classList.toggle("done", todayDone);
 
 // Heatmap: WEEKS columns, Monday-first rows, ending with the current week.
@@ -188,17 +277,438 @@ document.getElementById("today-list").innerHTML = todays.length
 
 const cats = {};
 for (const p of problems) (cats[p.category] ||= []).push(p);
-document.getElementById("cats").innerHTML = Object.entries(cats)
-  .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
-  .map(([c, list]) => {
-    const split = ["Easy", "Medium", "Hard"].map(d => [d, list.filter(p => p.difficulty === d).length]).filter(([, n]) => n)
-      .map(([d, n]) => `${n} ${d}`).join(" · ");
-    return `<details class="card"><summary><span><span class="name">${esc(pretty(c))}</span><br><span class="split">${esc(split)}</span></span><span class="count">${list.length}</span></summary>
-      <ul class="list">${list.map(p => row(p)).join("")}</ul></details>`;
-  }).join("") || `<div class="card empty">No solutions yet. Put them in solutions/&lt;Category&gt;/.</div>`;
+const catList = Object.entries(cats).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+// Hero stations: Today first, then categories in the same order as the cards.
+const stations = [
+  { name: "Today", color: COLORS[0], problems: todays, today: true },
+  ...catList.map(([c, list], i) => ({ name: pretty(c), color: COLORS[(i + 1) % COLORS.length], problems: list })),
+];
+
+document.getElementById("cats").innerHTML = catList.map(([c, list], i) =>
+  `<details class="card"><summary><span><span class="name">${esc(pretty(c))}</span><button class="visit" data-station="${i + 1}" title="Walk the robot here">Visit ↑</button><br><span class="split">${esc(splitOf(list))}</span></span><span class="count">${list.length}</span></summary>
+    <ul class="list">${list.map(p => row(p)).join("")}</ul></details>`
+).join("") || `<div class="card empty">No solutions yet. Put them in solutions/&lt;Category&gt;/.</div>`;
 
 document.getElementById("recent").innerHTML = problems.slice(0, 10).map(p => row(p, { showCat: true })).join("")
   || `<li class="empty">No solutions yet.</li>`;
+
+// ---------- hero panel + navigation (the 3D scene plugs into window.hero) ----------
+let current = 0;
+const panel = document.getElementById("panel");
+const dots = document.getElementById("dots");
+dots.innerHTML = stations.map((s, i) => `<i data-i="${i}" title="${esc(s.name)}"></i>`).join("");
+
+function renderPanel() {
+  const s = stations[current];
+  panel.style.setProperty("--station", s.color);
+  if (s.today) {
+    panel.innerHTML = `<div class="head"><div class="kicker">Today · ${esc(fmt(todayKey))}</div>
+      <div class="title">${streak > 0 ? `<span class="flame">🔥</span> ${streak}-day streak` : "No streak yet"}</div>
+      <div class="meta">${todayCount} / ${GOAL} solved · ${esc(streakNote)}</div>
+      <div class="bar${todayDone ? " done" : ""}"><div style="width:${Math.min(100, todayCount / GOAL * 100)}%"></div></div></div>
+      <ul class="list">${todays.map(p => row(p, { showDate: false, showCat: true })).join("") || `<li class="empty">Nothing yet today.</li>`}</ul>`;
+    panel.classList.toggle("alive", streak > 0);
+  } else {
+    panel.innerHTML = `<div class="head"><div class="kicker">Category ${current} / ${stations.length - 1}</div>
+      <div class="title">${esc(s.name)} <span>${s.problems.length}</span></div>
+      <div class="meta">${esc(splitOf(s.problems))} · last ${esc(fmt(s.problems[0].date))}</div></div>
+      <ul class="list">${s.problems.slice(0, 5).map(p => row(p)).join("")}</ul>
+      ${s.problems.length > 5 ? `<div class="empty">+ ${s.problems.length - 5} more in Categories below</div>` : ""}`;
+  }
+  dots.querySelectorAll("i").forEach((d, i) => d.classList.toggle("on", i === current));
+  document.getElementById("prev").disabled = current === 0;
+  document.getElementById("next").disabled = current === stations.length - 1;
+}
+
+function go(i) {
+  i = Math.max(0, Math.min(stations.length - 1, i));
+  if (i === current) return;
+  const from = current;
+  current = i;
+  renderPanel();
+  window.hero?.goTo(i, from);
+}
+
+document.getElementById("prev").onclick = () => go(current - 1);
+document.getElementById("next").onclick = () => go(current + 1);
+dots.onclick = e => { if (e.target.dataset.i) go(+e.target.dataset.i); };
+document.getElementById("cats").addEventListener("click", e => {
+  const btn = e.target.closest(".visit");
+  if (!btn) return;
+  e.preventDefault();
+  document.getElementById("hero").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" });
+  go(+btn.dataset.station);
+});
+addEventListener("keydown", e => {
+  if (e.target.closest("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "ArrowRight") { go(current + 1); e.preventDefault(); }
+  if (e.key === "ArrowLeft") { go(current - 1); e.preventDefault(); }
+});
+let touchX = null;
+const stageEl = document.getElementById("stage");
+stageEl.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, { passive: true });
+stageEl.addEventListener("touchend", e => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 40) go(current + (dx < 0 ? 1 : -1));
+  touchX = null;
+});
+renderPanel();
+
+// ---------- celebration ----------
+const milestone = MILESTONES.includes(streak);
+const confettiCanvas = document.getElementById("confetti");
+
+function confetti(waves) {
+  if (REDUCED) return;
+  const ctx = confettiCanvas.getContext("2d");
+  const dpr = devicePixelRatio || 1;
+  confettiCanvas.hidden = false;
+  confettiCanvas.width = innerWidth * dpr;
+  confettiCanvas.height = innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const bits = [];
+  const burst = () => {
+    for (let i = 0; i < 160; i++) {
+      const fromLeft = i % 2 === 0;
+      bits.push({
+        x: fromLeft ? 0 : innerWidth, y: innerHeight * 0.75,
+        vx: (fromLeft ? 1 : -1) * (4 + Math.random() * 9), vy: -(9 + Math.random() * 10),
+        r: Math.random() * Math.PI, vr: (Math.random() - .5) * .3,
+        w: 6 + Math.random() * 6, h: 4 + Math.random() * 4,
+        c: COLORS[i % COLORS.length], life: 0,
+      });
+    }
+  };
+  for (let w = 0; w < waves; w++) setTimeout(burst, w * 700);
+  const stopAt = performance.now() + 4500 + waves * 700;
+  (function frame(t) {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const b of bits) {
+      b.vy += .35; b.vx *= .985; b.x += b.vx; b.y += b.vy; b.r += b.vr; b.life++;
+      ctx.save();
+      ctx.translate(b.x, b.y); ctx.rotate(b.r);
+      ctx.globalAlpha = Math.max(0, 1 - b.life / 260);
+      ctx.fillStyle = b.c;
+      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h * Math.abs(Math.cos(b.r * 2)));
+      ctx.restore();
+    }
+    if (t < stopAt) requestAnimationFrame(frame);
+    else { ctx.clearRect(0, 0, innerWidth, innerHeight); confettiCanvas.hidden = true; }
+  })(performance.now());
+}
+
+let bannerTimer;
+function celebrate() {
+  document.getElementById("banner-big").textContent = milestone ? `🏆 Milestone: ${streak} days!` : `🔥 ${streak}-day streak!`;
+  document.getElementById("banner-small").textContent =
+    `${todayCount} solved today — goal of ${GOAL} reached. ${milestone ? "Huge. Keep going!" : "See you tomorrow!"}`;
+  const banner = document.getElementById("banner");
+  banner.classList.add("show");
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => banner.classList.remove("show"), 5000);
+  confetti(milestone ? 3 : 1);
+  window.hero?.dance(milestone);
+}
+
+let pendingCelebration = false;
+if (todayDone) {
+  document.getElementById("replay").hidden = false;
+  document.getElementById("replay").onclick = celebrate;
+  let seen = null;
+  try { seen = localStorage.getItem("dsa-celebrated"); } catch {}
+  if (seen !== todayKey) {
+    pendingCelebration = true;
+    try { localStorage.setItem("dsa-celebrated", todayKey); } catch {}
+  }
+}
+// Celebrate once the robot is ready, or after a few seconds without it.
+function startPendingCelebration() {
+  if (!pendingCelebration) return;
+  pendingCelebration = false;
+  celebrate();
+}
+addEventListener("hero-ready", startPendingCelebration);
+setTimeout(startPendingCelebration, 6000);
+
+// If three.js or the model never loads (offline CDN, old browser), drop the hero and keep the dashboard.
+let heroReady = false;
+addEventListener("hero-ready", () => { heroReady = true; });
+setTimeout(() => { if (!heroReady) document.getElementById("hero").classList.add("failed"); }, 12000);
+
+window.TRACKER = { stations, get current() { return current; }, REDUCED, startPendingCelebration };
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const { stations, REDUCED } = window.TRACKER;
+const hero = document.getElementById("hero");
+const stage = document.getElementById("stage");
+const labelsEl = document.getElementById("labels");
+const SPACING = 9;
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+function fail(err) {
+  console.warn("3D hero disabled:", err);
+  hero.classList.add("failed");
+  window.TRACKER.startPendingCelebration();
+}
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (err) {
+  fail(err);
+  throw err;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+
+const sceneColor = new THREE.Color(css("--scene"));
+const scene = new THREE.Scene();
+scene.background = sceneColor;
+scene.fog = new THREE.Fog(sceneColor, 14, 38);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(0, 4.2, 11);
+
+scene.add(new THREE.HemisphereLight(0xffffff, dark ? 0x30363d : 0x8d8d8d, dark ? 2.2 : 3));
+const sun = new THREE.DirectionalLight(0xffffff, dark ? 2 : 2.6);
+sun.position.set(-4, 10, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -4 });
+scene.add(sun, sun.target);
+
+// Checkered floor, like the three.js walk example.
+const tile = document.createElement("canvas");
+tile.width = tile.height = 64;
+const tctx = tile.getContext("2d");
+const [a, b] = dark ? ["#262c35", "#2d343e"] : ["#cfd5dc", "#c3c9d1"];
+tctx.fillStyle = a; tctx.fillRect(0, 0, 64, 64);
+tctx.fillStyle = b; tctx.fillRect(0, 0, 32, 32); tctx.fillRect(32, 32, 32, 32);
+const floorTex = new THREE.CanvasTexture(tile);
+floorTex.colorSpace = THREE.SRGBColorSpace;
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+floorTex.repeat.set(80, 30);
+floorTex.magFilter = THREE.NearestFilter;
+floorTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(160, 60), new THREE.MeshStandardMaterial({ map: floorTex, roughness: .9 }));
+floor.rotation.x = -Math.PI / 2;
+floor.position.x = (stations.length - 1) * SPACING / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Stations: a coloured platform plus one orbiting gem per solved problem.
+const GOAL = 3;
+const gemGeo = new THREE.OctahedronGeometry(0.22);
+const spinners = [];
+const labels = [];
+stations.forEach((s, i) => {
+  const x = i * SPACING;
+  const color = new THREE.Color(s.color);
+  const pad = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.4, 2.6, 0.12, 48),
+    new THREE.MeshStandardMaterial({ color, roughness: .5, metalness: .1, transparent: true, opacity: .9 }));
+  pad.position.set(x, 0.06, 0);
+  pad.receiveShadow = true;
+  scene.add(pad);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.75, 0.05, 8, 64), new THREE.MeshBasicMaterial({ color }));
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(x, 0.08, 0);
+  scene.add(ring);
+
+  const group = new THREE.Group();
+  group.position.set(x, 0, 0);
+  scene.add(group);
+  const gems = [];
+  if (s.today) {
+    // Three goal gems (lit when solved) plus a small bonus gem for each extra problem.
+    const solved = s.problems.length;
+    for (let k = 0; k < Math.max(GOAL, solved); k++) {
+      const lit = k < solved;
+      const goalGem = k < GOAL;
+      gems.push({ big: goalGem, mat: new THREE.MeshStandardMaterial({
+        color: lit ? color : 0x888888, emissive: lit ? color : 0x000000, emissiveIntensity: lit ? .6 : 0,
+        transparent: !lit, opacity: lit ? 1 : .35, roughness: .3, metalness: .2 }) });
+    }
+  } else {
+    for (let k = 0; k < Math.min(s.problems.length, 80); k++) {
+      gems.push({ big: false, mat: new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .35, roughness: .3, metalness: .2 }) });
+    }
+  }
+  gems.forEach((g, k) => {
+    const mesh = new THREE.Mesh(gemGeo, g.mat);
+    const perRing = s.today ? gems.length : 10;
+    const layer = Math.floor(k / perRing);
+    const angle = (k % perRing) / perRing * Math.PI * 2 + layer * 0.3;
+    const radius = 3.2 + layer * 0.15;
+    mesh.scale.setScalar(g.big ? 1.9 : 1);
+    mesh.position.set(Math.cos(angle) * radius, 1.1 + layer * 0.6, Math.sin(angle) * radius);
+    mesh.castShadow = true;
+    mesh.userData.phase = k * 0.7;
+    mesh.userData.baseY = mesh.position.y;
+    group.add(mesh);
+  });
+  spinners.push(group);
+
+  const tag = document.createElement("div");
+  tag.className = "tag";
+  tag.style.setProperty("--tag", s.color);
+  tag.innerHTML = s.today ? `Today<b>${s.problems.length}/${GOAL}</b>` : `${s.name}<b>${s.problems.length}</b>`;
+  labelsEl.appendChild(tag);
+  labels.push({ el: tag, pos: new THREE.Vector3(x, 5.4, 0) });
+});
+
+// Robot + animations.
+let robot, mixer, actions = {}, active;
+let state = "idle";          // idle | walking | emote
+let targetX = 0, speed = 0, yawTarget = 0;
+const clock = new THREE.Clock();
+
+function play(name, { once = false, fade = 0.3 } = {}) {
+  const next = actions[name];
+  if (!next || next === active) return;
+  next.reset();
+  next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+  next.clampWhenFinished = once;
+  next.fadeIn(fade).play();
+  if (active) active.fadeOut(fade);
+  active = next;
+}
+
+let danceTimer;
+function emote(name, then) {
+  if (state === "walking") return;
+  state = "emote";
+  clearTimeout(danceTimer);
+  play(name, { once: true, fade: 0.2 });
+  active.userData_then = then;
+}
+
+window.hero = {
+  goTo(i, from) {
+    if (!robot) return;
+    clearTimeout(danceTimer);
+    targetX = i * SPACING;
+    const far = Math.abs(i - from) > 1;
+    speed = far ? 9 : 4;
+    yawTarget = targetX > robot.position.x ? Math.PI / 2 : -Math.PI / 2;
+    state = "walking";
+    play(far ? "Running" : "Walking", { fade: 0.25 });
+  },
+  dance(isMilestone) {
+    if (!robot) return;
+    const dance = () => {
+      state = "emote";
+      play("Dance", { fade: 0.3 });
+      danceTimer = setTimeout(() => { state = "idle"; play("Idle", { fade: 0.5 }); }, isMilestone ? 6000 : 4500);
+    };
+    if (state === "walking") return;
+    if (isMilestone && !REDUCED) emote("Jump", dance);
+    else if (!REDUCED) dance();
+    else emote("Wave");
+  },
+};
+
+new GLTFLoader().load("assets/RobotExpressive.glb", gltf => {
+  robot = gltf.scene;
+  robot.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  robot.scale.setScalar(0.85);
+  robot.position.set(window.TRACKER.current * SPACING, 0.12, 0);
+  targetX = robot.position.x;
+  scene.add(robot);
+  mixer = new THREE.AnimationMixer(robot);
+  for (const clip of gltf.animations) actions[clip.name] = mixer.clipAction(clip);
+  mixer.addEventListener("finished", e => {
+    if (e.action !== active || state === "walking") return;
+    const then = e.action.userData_then;
+    e.action.userData_then = null;
+    if (then) then();
+    else { state = "idle"; play("Idle", { fade: 0.4 }); }
+  });
+  play("Idle", { fade: 0 });
+  document.getElementById("loading").remove();
+  if (!REDUCED) emote("Wave");
+  dispatchEvent(new Event("hero-ready"));
+}, undefined, fail);
+
+let frameOffset = 0;
+function resize() {
+  const { clientWidth: w, clientHeight: h } = stage;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  // Pull the camera back on narrow screens; on wide ones the panel covers the right, so frame the robot left of centre.
+  camera.position.z = w < 500 ? 16 : 13.5;
+  frameOffset = w > 720 ? 2.6 : 0;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+let visible = true;
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(hero);
+
+const v = new THREE.Vector3();
+const lookAt = new THREE.Vector3();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (!visible) return;
+  const t = clock.elapsedTime;
+
+  if (robot) {
+    if (state === "walking") {
+      const dx = targetX - robot.position.x;
+      const step = Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
+      robot.position.x += step;
+      if (Math.abs(targetX - robot.position.x) < 0.01) {
+        robot.position.x = targetX;
+        yawTarget = 0;
+        state = "idle";
+        play("Idle", { fade: 0.2 });
+        if (!REDUCED) emote("ThumbsUp");
+      }
+    }
+    robot.rotation.y += (yawTarget - robot.rotation.y) * Math.min(1, dt * 8);
+    mixer.update(dt);
+  }
+
+  const focusX = (robot ? robot.position.x : window.TRACKER.current * SPACING) + frameOffset;
+  const k = REDUCED ? 1 : Math.min(1, dt * 4);
+  camera.position.x += (focusX - camera.position.x) * k;
+  lookAt.set(camera.position.x, 2.1, 0);
+  camera.lookAt(lookAt);
+  sun.position.set(camera.position.x - 4, 10, 6);
+  sun.target.position.set(camera.position.x, 0, 0);
+
+  spinners.forEach((g, i) => {
+    if (!REDUCED) g.rotation.y = t * 0.25 + i;
+    g.children.forEach(m => {
+      if (!REDUCED) m.position.y = m.userData.baseY + Math.sin(t * 2 + m.userData.phase) * 0.12;
+      m.rotation.y = t * 1.5 + m.userData.phase;
+    });
+  });
+
+  const w = stage.clientWidth, h = stage.clientHeight;
+  labels.forEach((l, i) => {
+    v.copy(l.pos).project(camera);
+    const off = v.z > 1 || Math.abs(v.x) > 1.3;
+    l.el.style.display = off ? "none" : "";
+    if (off) return;
+    l.el.style.left = `${(v.x + 1) / 2 * w}px`;
+    l.el.style.top = `${(1 - v.y) / 2 * h}px`;
+    l.el.classList.toggle("far", i !== window.TRACKER.current);
+  });
+
+  renderer.render(scene, camera);
+});
 </script>
 </body>
 </html>

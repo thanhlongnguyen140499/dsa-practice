@@ -23,6 +23,7 @@ import html
 import json
 import random
 import re
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -529,6 +530,7 @@ def cmd_site(args):
     out = ROOT / "_site" / "index.html"
     out.parent.mkdir(exist_ok=True)
     out.write_text(page)
+    shutil.copytree(ROOT / "tracker" / "assets", out.parent / "assets", dirs_exist_ok=True)
     categories = len({p["category"] for p in problems})
     print(f"Wrote {out.relative_to(ROOT)}: {len(problems)} problems in {categories} categories")
     if args.open:
