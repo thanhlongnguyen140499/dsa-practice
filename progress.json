@@ -163,6 +163,13 @@
       "link": "https://leetcode.com/problems/number-of-recent-calls",
       "title": "Number of Recent Calls"
     },
+    "palindrome-linked-list": {
+      "company": "\u2014",
+      "date": "2026-10-30",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/palindrome-linked-list",
+      "title": "Palindrome Linked List"
+    },
     "palindrome-number": {
       "company": "Google",
       "date": "2026-10-19",
