@@ -205,13 +205,6 @@
       "link": "https://leetcode.com/problems/remove-linked-list-elements",
       "title": "Remove Linked List Elements"
     },
-    "reverse-linked-list": {
-      "company": "\u2014",
-      "date": "2026-10-30",
-      "difficulty": "Easy",
-      "link": "https://leetcode.com/problems/reverse-linked-list",
-      "title": "Reverse Linked List"
-    },
     "roman-to-integer": {
       "company": "\u2014",
       "date": "2026-10-21",
