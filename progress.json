@@ -177,6 +177,13 @@
       "link": "https://leetcode.com/problems/palindrome-number",
       "title": "Palindrome Number"
     },
+    "power-of-four": {
+      "company": "\u2014",
+      "date": "2026-10-31",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/power-of-four",
+      "title": "Power of Four"
+    },
     "power-of-three": {
       "company": "\u2014",
       "date": "2026-10-30",
