@@ -51,6 +51,13 @@
       "link": "https://leetcode.com/problems/closest-binary-search-tree-value",
       "title": "Closest Binary Search Tree Value"
     },
+    "fibonacci-number": {
+      "company": "\u2014",
+      "date": "2026-10-31",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/fibonacci-number",
+      "title": "Fibonacci Number"
+    },
     "find-the-index-of-the-first-occurrence-in-a-string": {
       "company": "\u2014",
       "date": "2026-10-29",
