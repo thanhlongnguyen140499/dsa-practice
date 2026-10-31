@@ -65,6 +65,13 @@
       "link": "https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-string",
       "title": "Find the Index of the First Occurrence in a String"
     },
+    "finding-3-digit-even-numbers": {
+      "company": "\u2014",
+      "date": "2026-10-31",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/finding-3-digit-even-numbers",
+      "title": "Finding 3-Digit Even Numbers"
+    },
     "first-bad-version": {
       "company": "\u2014",
       "date": "2026-10-26",
