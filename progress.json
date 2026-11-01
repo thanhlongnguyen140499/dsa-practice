@@ -254,6 +254,13 @@
       "link": "https://leetcode.com/problems/roman-to-integer",
       "title": "Roman to Integer"
     },
+    "same-tree": {
+      "company": "\u2014",
+      "date": "2026-11-01",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/same-tree",
+      "title": "Same Tree"
+    },
     "search-insert-position": {
       "company": "\u2014",
       "date": "2026-10-26",
