@@ -275,6 +275,13 @@
       "link": "https://leetcode.com/problems/sqrtx",
       "title": "Sqrt(x)"
     },
+    "symmetric-tree": {
+      "company": "\u2014",
+      "date": "2026-11-01",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/symmetric-tree",
+      "title": "Symmetric Tree"
+    },
     "time-needed-to-buy-tickets": {
       "company": "\u2014",
       "date": "2026-10-25",
