@@ -16,24 +16,25 @@ import Playgrounds
 
 #Playground("Finding 3-Digit Even Numbers") {
     class Solution {
-        
-        // Input: [Int]
-        // Output: sorted [Int] is 3-digit EVEN number
-        
-        // Plan:
-        // - sort digits array
-        // - use recursion to find outs
-        
-        // [3, 7, 5] -> sorted -> [3, 5, 7]
-        // 3 5 7
-        // 3 7 5
-        // 5 3 7
-        // 5 7 3
-        // 7 3 5
-        // 7 5 3
-        
         func findEvenNumbers(_ digits: [Int]) -> [Int] {
-            return []
+            var cnt = [Int](repeating: 0, count: 10)
+            for d in digits { cnt[d] += 1 }
+            var result: [Int] = []
+
+            func build(_ pos: Int, _ num: Int) {
+                if pos == 3 { result.append(num); return }
+                for d in 0...9 {
+                    if cnt[d] == 0 { continue }
+                    if pos == 0 && d == 0 { continue }
+                    if pos == 2 && d % 2 != 0 { continue }
+                    cnt[d] -= 1
+                    build(pos + 1, num * 10 + d)
+                    cnt[d] += 1
+                }
+            }
+
+            build(0, 0)
+            return result
         }
     }
 
