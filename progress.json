@@ -198,6 +198,13 @@
       "link": "https://leetcode.com/problems/palindrome-number",
       "title": "Palindrome Number"
     },
+    "path-sum": {
+      "company": "\u2014",
+      "date": "2026-11-02",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/path-sum",
+      "title": "Path Sum"
+    },
     "power-of-four": {
       "company": "\u2014",
       "date": "2026-10-31",
