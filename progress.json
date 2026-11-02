@@ -135,6 +135,13 @@
       "link": "https://leetcode.com/problems/longest-common-prefix",
       "title": "Longest Common Prefix"
     },
+    "maximum-depth-of-binary-tree": {
+      "company": "\u2014",
+      "date": "2026-11-02",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/maximum-depth-of-binary-tree",
+      "title": "Maximum Depth of Binary Tree"
+    },
     "merge-sorted-array": {
       "company": "Google",
       "date": "2026-10-20",
