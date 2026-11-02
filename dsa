@@ -485,8 +485,12 @@ def repo_url():
 
 
 def finished_date(path):
-    """Day the file was first committed (follows moves), or None if it isn't committed yet."""
-    dates = git("log", "--follow", "--diff-filter=A", "--format=%ad", "--date=short", "--", str(path.relative_to(ROOT)))
+    """Day the file was first committed (follows moves), or None if it isn't committed yet.
+
+    -M90%: only near-identical files count as moves, so a new solution that reuses an
+    older one's code (e.g. the same problem under another category) keeps its own date.
+    """
+    dates = git("log", "--follow", "-M90%", "--diff-filter=A", "--format=%ad", "--date=short", "--", str(path.relative_to(ROOT)))
     return dates.splitlines()[-1] if dates else None
 
 
