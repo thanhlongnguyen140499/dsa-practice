@@ -43,7 +43,7 @@ so the streak rolls over. The card at the top of this README is `card-dark.svg` 
 Needs a `VERCEL_TOKEN` repo secret (vercel.com/account/tokens → GitHub repo Settings → Secrets and variables → Actions).
 
 A problem counts as finished on the day its file in `solutions/<Category>/` is first committed; the folder is its category.
-The streak counts days with at least 3 finished problems. Files directly in `solutions/` aren't counted.
+The streak counts days with at least 1 finished problem. Files directly in `solutions/` aren't counted.
 
 The problem lists are a git submodule. Clone this repo with:
 

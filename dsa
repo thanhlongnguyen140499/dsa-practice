@@ -514,7 +514,7 @@ def parse_header(path, slug):
 
 # ---------- README card ----------
 
-GOAL = 3           # same rules as tracker/index.html
+GOAL = 1           # same rules as tracker/index.html
 CARD_WEEKS = 16
 CARD_THEMES = {
     "dark": {"bg": "#0d1117", "card": "#161b22", "text": "#e6edf3", "muted": "#8b949e", "line": "#30363d",

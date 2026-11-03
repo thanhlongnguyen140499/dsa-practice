@@ -199,7 +199,7 @@
 
 <script>
 const DATA = /*__DATA__*/null || { repo: null, problems: [] };
-const GOAL = 3;
+const GOAL = 1;
 const ON_FIRE = 5;           // problems in one day that keep the celebration running all day
 const WEEKS = 26;
 const MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
@@ -243,7 +243,7 @@ const streakNote = todayDone ? "Today counted ✓" :
   `Solve ${GOAL - todayCount} today to start one`;
 
 document.querySelectorAll(".goal-n").forEach(e => e.textContent = GOAL);
-document.getElementById("sub").textContent = `Solve at least ${GOAL} problems a day to keep the streak.`;
+document.getElementById("sub").textContent = `Solve at least ${GOAL} problem${GOAL === 1 ? "" : "s"} a day to keep the streak.`;
 document.getElementById("streak").innerHTML = `<span class="flame">🔥</span> ${streak}`;
 document.querySelector(".stat.streak").classList.toggle("alive", streak > 0);
 document.getElementById("streak-note").textContent = streakNote;
@@ -568,7 +568,7 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 // Stations: a coloured platform plus one orbiting gem per solved problem.
-const GOAL = 3;
+const GOAL = 1;
 const gemGeo = new THREE.OctahedronGeometry(0.22);
 const spinners = [];
 const labels = [];
