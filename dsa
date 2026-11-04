@@ -65,7 +65,7 @@ def resolve_company(query):
 
 
 def slug_of(link):
-    return link.rstrip("/").split("/problems/")[-1].split("/")[0]
+    return link.split("?")[0].split("#")[0].rstrip("/").split("/problems/")[-1].split("/")[0]
 
 
 NON_SWIFT_TOPICS = ("Database", "Shell")  # SQL / bash problems can't be solved in Swift

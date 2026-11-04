@@ -58,6 +58,13 @@
       "link": "https://leetcode.com/problems/fibonacci-number",
       "title": "Fibonacci Number"
     },
+    "find-center-of-star-graph": {
+      "company": "\u2014",
+      "date": "2026-11-04",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/find-center-of-star-graph",
+      "title": "Find Center of Star Graph"
+    },
     "find-the-index-of-the-first-occurrence-in-a-string": {
       "company": "\u2014",
       "date": "2026-10-29",
