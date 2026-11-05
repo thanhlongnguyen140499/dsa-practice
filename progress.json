@@ -65,6 +65,13 @@
       "link": "https://leetcode.com/problems/find-center-of-star-graph",
       "title": "Find Center of Star Graph"
     },
+    "find-if-path-exists-in-graph": {
+      "company": "\u2014",
+      "date": "2026-11-05",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/find-if-path-exists-in-graph",
+      "title": "Find if Path Exists in Graph"
+    },
     "find-the-index-of-the-first-occurrence-in-a-string": {
       "company": "\u2014",
       "date": "2026-10-29",
