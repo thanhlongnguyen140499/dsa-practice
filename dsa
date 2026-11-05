@@ -11,6 +11,7 @@ Usage:
   ./dsa regen [slug...] [--force]               rebuild untouched files with LeetCode's signature + tests
   ./dsa status [company]                        show progress
   ./dsa site [--open]                           build the tracker page into _site/ (+ card-*.svg for the README)
+  ./dsa deploy                                  build the site and deploy it to Vercel (runs on every push to main)
 
 Filters:
   -p/--period  30d | 3m | 6m | older | all   (default: all)
@@ -695,6 +696,18 @@ def cmd_site(args):
         subprocess.call(["open", str(out)])
 
 
+def cmd_deploy(args):
+    """Build _site/ and ship it to the Vercel project with the local Vercel CLI (no GitHub Actions needed)."""
+    if not shutil.which("vercel"):
+        sys.exit("Vercel CLI not found. Install it with: npm install --global vercel, then run: vercel login")
+    cmd_site(argparse.Namespace(open=False))
+    site = ROOT / "_site"
+    for step in (["vercel", "link", "--yes", "--project", "dsa-tracker"],
+                 ["vercel", "deploy", "--prod", "--yes"]):
+        if subprocess.call(step, cwd=site) != 0:
+            sys.exit(f"Failed: {' '.join(step)}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -724,6 +737,7 @@ def main():
     p = sub.add_parser("status"); p.add_argument("company", nargs="?"); p.set_defaults(func=cmd_status)
     p = sub.add_parser("site"); p.add_argument("--open", action="store_true", help="open the page in your browser")
     p.set_defaults(func=cmd_site)
+    p = sub.add_parser("deploy"); p.set_defaults(func=cmd_deploy)
 
     args = parser.parse_args()
     args.func(args)

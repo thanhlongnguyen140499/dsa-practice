@@ -38,9 +38,11 @@ SQL (Database) and Shell problems are skipped automatically.
 
 ## Tracker
 
-Deployed to Vercel (project `dsa-tracker`) by GitHub Actions on every push to `main`, and once a day at 00:05 (Vietnam time)
-so the streak rolls over. The card at the top of this README is `card-dark.svg` / `card-light.svg` from the same deploy.
-Needs a `VERCEL_TOKEN` repo secret (vercel.com/account/tokens → GitHub repo Settings → Secrets and variables → Actions).
+Deployed to Vercel (project `dsa-tracker`) from this machine: the `.githooks/pre-push` hook runs `./dsa deploy` on every
+push to `main` (a failed deploy never blocks the push). Run `./dsa deploy` yourself any time, e.g. to roll the streak over
+on a day with no push. The card at the top of this README is `card-dark.svg` / `card-light.svg` from the same deploy.
+One-time setup per clone: `npm install --global vercel`, `vercel login`, `git config core.hooksPath .githooks`.
+(The GitHub Actions workflow is kept for manual runs only, so it uses no Actions minutes.)
 
 A problem counts as finished on the day its file in `solutions/<Category>/` is first committed; the folder is its category.
 The streak counts days with at least 1 finished problem. Files directly in `solutions/` aren't counted.

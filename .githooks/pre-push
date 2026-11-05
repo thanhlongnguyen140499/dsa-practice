@@ -1,0 +1,13 @@
+#!/bin/sh
+# Deploys the tracker to Vercel when main is pushed (replaces the GitHub Actions deploy).
+# A failed deploy never blocks the push; rerun it with: ./dsa deploy
+# Enable once per clone with: git config core.hooksPath .githooks
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [ "$remote_ref" = "refs/heads/main" ] && [ "$local_sha" != "0000000000000000000000000000000000000000" ]; then
+        echo "pre-push: deploying tracker to Vercel..."
+        "$(git rev-parse --show-toplevel)/dsa" deploy || echo "pre-push: deploy failed (push continues). Retry with: ./dsa deploy"
+        break
+    fi
+done
+exit 0

@@ -1,11 +1,11 @@
 name: Tracker site
 
+# Manual only: deploys now run locally from the pre-push hook (./dsa deploy), so no Actions minutes are needed.
+# To bring back automatic deploys, restore these triggers:
+#   push: { branches: [main] }
+#   schedule: [{ cron: "5 17 * * *" }]  # 00:05 in Vietnam: streak rollover
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: "5 17 * * *"  # 00:05 in Vietnam: rebuild so the README card's streak rolls over to the new day
 
 concurrency:
   group: vercel
