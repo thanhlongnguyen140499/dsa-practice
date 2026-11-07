@@ -61,6 +61,13 @@
       "link": "https://leetcode.com/problems/closest-binary-search-tree-value",
       "title": "Closest Binary Search Tree Value"
     },
+    "counting-bits": {
+      "company": "\u2014",
+      "date": "2026-11-07",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/counting-bits",
+      "title": "Counting Bits"
+    },
     "fibonacci-number": {
       "company": "\u2014",
       "date": "2026-10-31",
