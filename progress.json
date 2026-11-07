@@ -236,6 +236,13 @@
       "link": "https://leetcode.com/problems/pascals-triangle",
       "title": "Pascal's Triangle"
     },
+    "pascals-triangle-ii": {
+      "company": "\u2014",
+      "date": "2026-11-07",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/pascals-triangle-ii",
+      "title": "Pascal's Triangle II"
+    },
     "path-sum": {
       "company": "\u2014",
       "date": "2026-11-02",
