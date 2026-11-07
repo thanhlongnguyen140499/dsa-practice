@@ -198,7 +198,8 @@
 </main>
 
 <script>
-const DATA = /*__DATA__*/null || { repo: null, problems: [] };
+const DATA = /*__DATA__*/null || { repo: null, problems: [], freezes: [] };
+const FREEZES = new Set(DATA.freezes || []);  // days that keep the streak alive without adding to it
 const GOAL = 1;
 const ON_FIRE = 5;           // problems in one day that keep the celebration running all day
 const WEEKS = 26;
@@ -229,11 +230,15 @@ const todayDone = todayCount >= GOAL;
 // Current streak: consecutive days with >= GOAL ending today, or yesterday if today isn't done yet.
 let cursor = todayDone ? today : addDays(today, -1);
 let streak = 0;
-while (count(key(cursor)) >= GOAL) { streak++; cursor = addDays(cursor, -1); }
+while (count(key(cursor)) >= GOAL || FREEZES.has(key(cursor))) {
+  if (count(key(cursor)) >= GOAL) streak++;
+  cursor = addDays(cursor, -1);
+}
 
 let longest = 0, run = 0, prev = null;
-for (const k of Object.keys(byDay).filter(k => count(k) >= GOAL).sort()) {
-  run = prev && key(addDays(parse(prev), 1)) === k ? run + 1 : 1;
+for (const k of [...new Set([...Object.keys(byDay).filter(k => count(k) >= GOAL), ...FREEZES])].sort()) {
+  const bridged = prev && key(addDays(parse(prev), 1)) === k;
+  run = FREEZES.has(k) ? (bridged ? run : 0) : (bridged ? run + 1 : 1);
   longest = Math.max(longest, run);
   prev = k;
 }

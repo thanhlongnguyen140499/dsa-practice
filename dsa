@@ -530,21 +530,31 @@ FLAME_CORE = "M0 -18 C6 -8 14 -2 14 10 C14 20 8 26 0 26 C-8 26 -14 20 -14 10 C-1
 
 
 def streak_stats(problems, today):
-    """(current streak, longest streak, solved today) with the tracker page's rules."""
+    """(current streak, longest streak, solved today) with the tracker page's rules.
+
+    Days listed in progress.json "freezes" keep a streak alive without adding to it.
+    """
     from datetime import timedelta
     by_day = {}
     for p in problems:
         by_day[p["date"]] = by_day.get(p["date"], 0) + 1
+    freezes = set(load_progress().get("freezes", []))
     count = lambda d: by_day.get(d.isoformat(), 0)
+    frozen = lambda d: d.isoformat() in freezes
     cursor = today if count(today) >= GOAL else today - timedelta(days=1)
     streak = 0
-    while count(cursor) >= GOAL:
-        streak += 1
+    while count(cursor) >= GOAL or frozen(cursor):
+        streak += count(cursor) >= GOAL
         cursor -= timedelta(days=1)
     longest = run = 0
     prev = None
-    for d in sorted(date.fromisoformat(k) for k, n in by_day.items() if n >= GOAL):
-        run = run + 1 if prev and d - prev == timedelta(days=1) else 1
+    days = {k for k, n in by_day.items() if n >= GOAL} | freezes
+    for d in sorted(date.fromisoformat(k) for k in days):
+        bridged = prev and d - prev == timedelta(days=1)
+        if frozen(d):
+            run = run if bridged else 0
+        else:
+            run = run + 1 if bridged else 1
         longest, prev = max(longest, run), d
     return streak, longest, count(today)
 
@@ -681,7 +691,7 @@ def cmd_site(args):
             "path": str(path.relative_to(ROOT)),
             **parse_header(path, slug),
         })
-    data = {"repo": repo_url(), "problems": problems}
+    data = {"repo": repo_url(), "problems": problems, "freezes": load_progress().get("freezes", [])}
     page = (ROOT / "tracker" / "index.html").read_text()
     page = page.replace("/*__DATA__*/null", json.dumps(data).replace("</", "<\\/"))
     out = ROOT / "_site" / "index.html"
