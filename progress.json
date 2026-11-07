@@ -229,6 +229,13 @@
       "link": "https://leetcode.com/problems/palindrome-number",
       "title": "Palindrome Number"
     },
+    "pascals-triangle": {
+      "company": "\u2014",
+      "date": "2026-11-07",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/pascals-triangle",
+      "title": "Pascal's Triangle"
+    },
     "path-sum": {
       "company": "\u2014",
       "date": "2026-11-02",
