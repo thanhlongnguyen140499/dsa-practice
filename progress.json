@@ -334,6 +334,13 @@
       "link": "https://leetcode.com/problems/search-insert-position",
       "title": "Search Insert Position"
     },
+    "single-number": {
+      "company": "\u2014",
+      "date": "2026-11-09",
+      "difficulty": "Easy",
+      "link": "https://leetcode.com/problems/single-number",
+      "title": "Single Number"
+    },
     "sqrtx": {
       "company": "\u2014",
       "date": "2026-10-26",
