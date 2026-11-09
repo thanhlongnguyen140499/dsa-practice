@@ -62,6 +62,13 @@
       "link": "https://leetcode.com/problems/closest-binary-search-tree-value",
       "title": "Closest Binary Search Tree Value"
     },
+    "container-with-most-water": {
+      "company": "\u2014",
+      "date": "2026-11-09",
+      "difficulty": "Medium",
+      "link": "https://leetcode.com/problems/container-with-most-water",
+      "title": "Container With Most Water"
+    },
     "counting-bits": {
       "company": "\u2014",
       "date": "2026-11-07",
